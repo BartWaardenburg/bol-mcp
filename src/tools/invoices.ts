@@ -9,7 +9,8 @@ export const registerInvoiceTools = (server: McpServer, client: BolClient): void
     {
       title: "List Invoices",
       description:
-        "List invoices from bol.com. Optionally filter by date range using period start and end dates (format: YYYY-MM-DD).",
+        "List invoices from bol.com. Optionally filter by date range using period start and end dates (format: YYYY-MM-DD). " +
+        "The date range must not exceed 32 days.",
       annotations: { readOnlyHint: true, openWorldHint: true },
 
       inputSchema: z.object({
@@ -26,7 +27,7 @@ export const registerInvoiceTools = (server: McpServer, client: BolClient): void
     async ({ periodStartDate, periodEndDate }) => {
       try {
         const response = await client.getInvoices(periodStartDate, periodEndDate);
-        const invoices = response.invoices ?? [];
+        const invoices = response.invoiceListItems ?? [];
 
         if (invoices.length === 0) {
           return toTextResult("No invoices found for the specified period.");
@@ -35,10 +36,25 @@ export const registerInvoiceTools = (server: McpServer, client: BolClient): void
         return toTextResult(
           [
             `Invoices: ${invoices.length} results`,
+            response.period ? `Period: ${response.period}` : null,
             ...invoices.map((inv) =>
-              `  - Invoice ${inv.invoiceId}${inv.invoiceMediaType ? ` (${inv.invoiceMediaType})` : ""}`,
+              [
+                `  - Invoice ${inv.invoiceId}`,
+                inv.invoiceType ? `    Type: ${inv.invoiceType}` : null,
+                inv.issueDate ? `    Issued: ${inv.issueDate}` : null,
+                inv.invoicePeriod
+                  ? `    Period: ${inv.invoicePeriod.startDate} to ${inv.invoicePeriod.endDate}`
+                  : null,
+                inv.legalMonetaryTotal?.payableAmount !== undefined
+                  ? `    Payable: ${inv.legalMonetaryTotal.payableAmount}`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join("\n"),
             ),
-          ].join("\n"),
+          ]
+            .filter(Boolean)
+            .join("\n"),
           { invoices } as Record<string, unknown>,
         );
       } catch (error) {
@@ -63,12 +79,7 @@ export const registerInvoiceTools = (server: McpServer, client: BolClient): void
         const invoice = await client.getInvoice(invoiceId);
 
         return toTextResult(
-          [
-            `Invoice: ${invoice.invoiceId}`,
-            invoice.invoiceMediaType ? `Type: ${invoice.invoiceMediaType}` : null,
-          ]
-            .filter(Boolean)
-            .join("\n"),
+          `Invoice ${invoiceId} details retrieved.`,
           invoice as Record<string, unknown>,
         );
       } catch (error) {

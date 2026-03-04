@@ -116,14 +116,15 @@ export const registerReturnTools = (server: McpServer, client: BolClient): void 
     {
       title: "Handle Return",
       description:
-        "Handle/process a return item. Set the handling result and quantity returned. " +
+        "Handle/process a return item by its RMA ID. The RMA ID can be found in the return items from get_return. " +
+        "Set the handling result and quantity returned. " +
         "Valid handling results: RETURN_RECEIVED, EXCHANGE_PRODUCT, RETURN_DOES_NOT_MEET_CONDITIONS, REPAIR_PRODUCT, CUSTOMER_KEEPS_PRODUCT_PAID, STILL_APPROVED. " +
         "Returns a process status — the return is handled asynchronously. " +
         "Always review the return details with get_return before handling.",
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
 
       inputSchema: z.object({
-        returnId: z.string().min(1).describe("The bol.com return ID."),
+        rmaId: z.string().min(1).describe("The RMA ID of the return item (found in return items from get_return)."),
         handlingResult: z
           .enum([
             "RETURN_RECEIVED",
@@ -137,16 +138,16 @@ export const registerReturnTools = (server: McpServer, client: BolClient): void 
         quantityReturned: z.number().int().min(1).describe("Number of items returned."),
       }),
     },
-    async ({ returnId, handlingResult, quantityReturned }) => {
+    async ({ rmaId, handlingResult, quantityReturned }) => {
       try {
-        const result = await client.handleReturn(returnId, {
+        const result = await client.handleReturn(rmaId, {
           handlingResult,
           quantityReturned,
         });
 
         return toTextResult(
           [
-            `Return ${returnId} handling initiated: ${handlingResult} (${quantityReturned} items)`,
+            `Return RMA ${rmaId} handling initiated: ${handlingResult} (${quantityReturned} items)`,
             `Process status: ${result.processStatusId} (${result.status})`,
           ].join("\n"),
           result as Record<string, unknown>,

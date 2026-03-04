@@ -15,11 +15,15 @@ export const registerShipmentTools = (server: McpServer, client: BolClient): voi
       inputSchema: z.object({
         page: z.number().int().min(1).default(1).describe("Page number (1-based)."),
         orderId: z.string().optional().describe("Filter shipments by order ID."),
+        fulfilmentMethod: z
+          .enum(["FBR", "FBB"])
+          .optional()
+          .describe("Filter by fulfilment method: FBR (fulfilled by retailer) or FBB (fulfilled by bol.com)."),
       }),
     },
-    async ({ page, orderId }) => {
+    async ({ page, orderId, fulfilmentMethod }) => {
       try {
-        const response = await client.getShipments(page, orderId);
+        const response = await client.getShipments(page, orderId, fulfilmentMethod);
         const shipments = response.shipments ?? [];
 
         if (shipments.length === 0) {
@@ -105,6 +109,7 @@ export const registerShipmentTools = (server: McpServer, client: BolClient): voi
           .array(
             z.object({
               orderItemId: z.string().min(1).describe("The order item ID to ship."),
+              quantity: z.number().int().min(1).optional().describe("Quantity to ship. Omit to ship the full ordered quantity."),
             }),
           )
           .min(1)

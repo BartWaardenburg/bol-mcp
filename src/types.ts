@@ -7,6 +7,7 @@ export interface ShipmentDetails {
   streetName?: string;
   houseNumber?: string;
   houseNumberExtension?: string;
+  extraAddressInformation?: string;
   zipCode?: string;
   city?: string;
   countryCode?: string;
@@ -14,6 +15,7 @@ export interface ShipmentDetails {
   company?: string;
   deliveryPhoneNumber?: string;
   language?: string;
+  pickupPointName?: string;
 }
 
 export interface BillingDetails {
@@ -23,6 +25,7 @@ export interface BillingDetails {
   streetName?: string;
   houseNumber?: string;
   houseNumberExtension?: string;
+  extraAddressInformation?: string;
   zipCode?: string;
   city?: string;
   countryCode?: string;
@@ -33,30 +36,76 @@ export interface BillingDetails {
   orderReference?: string;
 }
 
+export interface OrderItemFulfilment {
+  method: string;
+  distributionParty?: string;
+  latestDeliveryDate?: string;
+  exactDeliveryDate?: string;
+  expiryDate?: string;
+  timeFrameType?: string;
+}
+
+export interface OrderItemOffer {
+  offerId?: string;
+  reference?: string;
+}
+
+export interface OrderItemProduct {
+  ean?: string;
+  title?: string;
+}
+
+export interface OrderItemDiscount {
+  title?: string;
+  amount?: number;
+}
+
 export interface OrderItem {
   orderItemId: string;
-  offerReference?: string;
-  ean: string;
-  title?: string;
+  cancellationRequest?: boolean;
+  fulfilment: OrderItemFulfilment;
+  offer?: OrderItemOffer;
+  product?: OrderItemProduct;
   quantity: number;
-  offerPrice: number;
+  quantityShipped?: number;
+  quantityCancelled?: number;
+  unitPrice?: number;
+  totalPrice?: number;
+  commission?: number;
+  discounts?: OrderItemDiscount[];
+  latestChangedDateTime?: string;
+  /** @deprecated v9 flat field — kept for backward compatibility */
+  ean?: string;
+  /** @deprecated v9 flat field — kept for backward compatibility */
+  title?: string;
+  /** @deprecated v9 flat field — kept for backward compatibility */
+  offerPrice?: number;
+  /** @deprecated v9 flat field — kept for backward compatibility */
   offerCondition?: string;
-  cancelRequest?: boolean;
-  fulfilmentMethod: string;
+  /** @deprecated v9 flat field — kept for backward compatibility */
+  offerReference?: string;
+  /** @deprecated v9 flat field — kept for backward compatibility */
+  fulfilmentMethod?: string;
+  /** @deprecated v9 flat field — kept for backward compatibility */
   fulfilmentStatus?: string;
+  /** @deprecated v9 flat field — kept for backward compatibility */
+  latestDeliveryDate?: string;
+  /** @deprecated v9 flat field — kept for backward compatibility */
+  exactDeliveryDate?: string;
+  /** @deprecated v9 flat field — kept for backward compatibility */
+  expiryDate?: string;
+  /** @deprecated v9 flat field — kept for backward compatibility */
+  cancelRequest?: boolean;
   selectedDeliveryWindow?: {
     startDateTime?: string;
     endDateTime?: string;
   };
-  latestDeliveryDate?: string;
-  exactDeliveryDate?: string;
-  expiryDate?: string;
 }
 
 export interface Order {
   orderId: string;
   pickupPoint?: boolean;
-  dateTimeOrderPlaced?: string;
+  orderPlacedDateTime?: string;
   orderItems: OrderItem[];
   shipmentDetails?: ShipmentDetails;
   billingDetails?: BillingDetails;
@@ -152,11 +201,17 @@ export interface ShipmentItem {
   orderId: string;
 }
 
+export interface TransportEvent {
+  eventCode?: string;
+  eventDateTime?: string;
+}
+
 export interface Transport {
   transportId?: string;
   transporterCode?: string;
   trackAndTrace?: string;
   shippingLabelId?: string;
+  transportEvents?: TransportEvent[];
 }
 
 export interface ShipmentOrder {
@@ -182,7 +237,7 @@ export interface ShipmentsResponse {
 }
 
 export interface CreateShipmentRequest {
-  orderItems: { orderItemId: string }[];
+  orderItems: { orderItemId: string; quantity?: number }[];
   shipmentReference?: string;
   shippingLabelId?: string;
   transport?: {
@@ -215,6 +270,19 @@ export interface ReturnItem {
     handlingResult: string;
     processingDateTime?: string;
   }[];
+  customerDetails?: {
+    salutation?: string;
+    firstName?: string;
+    surname?: string;
+    streetName?: string;
+    houseNumber?: string;
+    houseNumberExtension?: string;
+    zipCode?: string;
+    city?: string;
+    countryCode?: string;
+    email?: string;
+    company?: string;
+  };
 }
 
 export interface Return {
@@ -241,6 +309,23 @@ export interface InvoicePeriod {
   endDate: string;
 }
 
+export interface LegalMonetaryTotal {
+  lineExtensionAmount?: number;
+  payableAmount?: number;
+  taxExclusiveAmount?: number;
+  taxInclusiveAmount?: number;
+}
+
+export interface InvoiceListItem {
+  invoiceId: string;
+  invoiceType?: string;
+  issueDate?: string;
+  invoicePeriod?: InvoicePeriod;
+  legalMonetaryTotal?: LegalMonetaryTotal;
+  invoiceMediaTypes?: string[];
+  specificationMediaTypes?: string[];
+}
+
 export interface Invoice {
   invoiceId: string;
   invoiceMediaType?: string;
@@ -248,7 +333,10 @@ export interface Invoice {
 }
 
 export interface InvoicesResponse {
-  invoices: Invoice[];
+  invoiceListItems?: InvoiceListItem[];
+  period?: string;
+  /** @deprecated kept for backward compat if API ever returns this key */
+  invoices?: Invoice[];
 }
 
 // --- Commissions ---

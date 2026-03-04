@@ -13,7 +13,6 @@ import type {
   Return,
   ReturnsResponse,
   HandleReturnRequest,
-  Invoice,
   InvoicesResponse,
   Commission,
   ProcessStatus,
@@ -117,13 +116,16 @@ export class BolClient {
 
   // --- Orders ---
 
-  async getOrders(page = 1, fulfilmentMethod?: string): Promise<OrdersResponse> {
+  async getOrders(page = 1, fulfilmentMethod?: string, status?: string): Promise<OrdersResponse> {
     const query = new URLSearchParams({ page: String(page) });
     if (fulfilmentMethod) {
       query.set("fulfilment-method", fulfilmentMethod);
     }
+    if (status) {
+      query.set("status", status);
+    }
     return this.cachedRequest(
-      `orders:${page}:${fulfilmentMethod ?? ""}`,
+      `orders:${page}:${fulfilmentMethod ?? ""}:${status ?? ""}`,
       60_000,
       () => this.request<OrdersResponse>(`/orders?${query.toString()}`),
     );
@@ -203,13 +205,16 @@ export class BolClient {
 
   // --- Shipments ---
 
-  async getShipments(page = 1, orderId?: string): Promise<ShipmentsResponse> {
+  async getShipments(page = 1, orderId?: string, fulfilmentMethod?: string): Promise<ShipmentsResponse> {
     const query = new URLSearchParams({ page: String(page) });
     if (orderId) {
       query.set("order-id", orderId);
     }
+    if (fulfilmentMethod) {
+      query.set("fulfilment-method", fulfilmentMethod);
+    }
     return this.cachedRequest(
-      `shipments:${page}:${orderId ?? ""}`,
+      `shipments:${page}:${orderId ?? ""}:${fulfilmentMethod ?? ""}`,
       60_000,
       () => this.request<ShipmentsResponse>(`/shipments?${query.toString()}`),
     );
@@ -257,15 +262,15 @@ export class BolClient {
     );
   }
 
-  async handleReturn(returnId: string, data: HandleReturnRequest): Promise<ProcessStatus> {
+  async handleReturn(rmaId: string, data: HandleReturnRequest): Promise<ProcessStatus> {
     const result = await this.request<ProcessStatus>(
-      `/returns/${encodeURIComponent(returnId)}`,
+      `/returns/${encodeURIComponent(rmaId)}`,
       {
         method: "PUT",
         body: JSON.stringify(data),
       },
     );
-    this.cache.invalidate(`return:${returnId}`);
+    this.cache.invalidate("return:");
     return result;
   }
 
@@ -273,11 +278,11 @@ export class BolClient {
 
   async getInvoices(periodStartDate?: string, periodEndDate?: string): Promise<InvoicesResponse> {
     const query = new URLSearchParams();
-    if (periodStartDate) {
-      query.set("period-start-date", periodStartDate);
-    }
-    if (periodEndDate) {
-      query.set("period-end-date", periodEndDate);
+    if (periodStartDate && periodEndDate) {
+      query.set("period", `${periodStartDate}/${periodEndDate}`);
+    } else if (periodStartDate) {
+      // If only start date provided, use a reasonable end (same day)
+      query.set("period", `${periodStartDate}/${periodStartDate}`);
     }
     const qs = query.toString();
     const path = qs ? `/invoices?${qs}` : "/invoices";
@@ -288,11 +293,11 @@ export class BolClient {
     );
   }
 
-  async getInvoice(invoiceId: string): Promise<Invoice> {
+  async getInvoice(invoiceId: string): Promise<Record<string, unknown>> {
     return this.cachedRequest(
       `invoice:${invoiceId}`,
       300_000,
-      () => this.request<Invoice>(`/invoices/${encodeURIComponent(invoiceId)}`),
+      () => this.request<Record<string, unknown>>(`/invoices/${encodeURIComponent(invoiceId)}`),
     );
   }
 
@@ -300,7 +305,6 @@ export class BolClient {
 
   async getCommission(ean: string, condition: string, unitPrice: number): Promise<Commission> {
     const query = new URLSearchParams({
-      ean,
       condition,
       "unit-price": String(unitPrice),
     });

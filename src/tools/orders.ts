@@ -1,7 +1,24 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as z from "zod/v4";
 import type { BolClient } from "../bol-client.js";
+import type { OrderItem } from "../types.js";
 import { toTextResult, toErrorResult } from "../tool-result.js";
+
+/** Helper to extract EAN from v10 nested structure or v9 flat field */
+const getEan = (item: OrderItem): string =>
+  item.product?.ean ?? item.ean ?? "unknown";
+
+/** Helper to extract title from v10 nested structure or v9 flat field */
+const getTitle = (item: OrderItem): string =>
+  item.product?.title ?? item.title ?? "unknown";
+
+/** Helper to extract unit price from v10 or v9 field */
+const getUnitPrice = (item: OrderItem): number | undefined =>
+  item.unitPrice ?? item.offerPrice;
+
+/** Helper to extract fulfilment method from v10 nested or v9 flat */
+const getFulfilmentMethod = (item: OrderItem): string =>
+  item.fulfilment?.method ?? item.fulfilmentMethod ?? "unknown";
 
 export const registerOrderTools = (server: McpServer, client: BolClient): void => {
   server.registerTool(
@@ -10,7 +27,8 @@ export const registerOrderTools = (server: McpServer, client: BolClient): void =
       title: "List Orders",
       description:
         "List recent orders from bol.com. Returns orders with their items, shipping details, and status. " +
-        "Use the fulfilmentMethod filter to show only FBR (fulfilled by retailer) or FBB (fulfilled by bol.com) orders.",
+        "Use the fulfilmentMethod filter to show only FBR (fulfilled by retailer) or FBB (fulfilled by bol.com) orders. " +
+        "Use the status filter to show OPEN (awaiting shipment/cancellation) or ALL orders.",
       annotations: { readOnlyHint: true, openWorldHint: true },
 
       inputSchema: z.object({
@@ -19,11 +37,15 @@ export const registerOrderTools = (server: McpServer, client: BolClient): void =
           .enum(["FBR", "FBB"])
           .optional()
           .describe("Filter by fulfilment method: FBR (fulfilled by retailer) or FBB (fulfilled by bol.com)."),
+        status: z
+          .enum(["OPEN", "SHIPPED", "ALL"])
+          .optional()
+          .describe("Filter by order status: OPEN (needs handling), SHIPPED (shipped in last 48h), or ALL."),
       }),
     },
-    async ({ page, fulfilmentMethod }) => {
+    async ({ page, fulfilmentMethod, status }) => {
       try {
-        const response = await client.getOrders(page, fulfilmentMethod);
+        const response = await client.getOrders(page, fulfilmentMethod, status);
         const orders = response.orders ?? [];
 
         if (orders.length === 0) {
@@ -36,10 +58,10 @@ export const registerOrderTools = (server: McpServer, client: BolClient): void =
             ...orders.map((o) =>
               [
                 `  - Order ${o.orderId}`,
-                o.dateTimeOrderPlaced ? `    Placed: ${o.dateTimeOrderPlaced}` : null,
+                o.orderPlacedDateTime ? `    Placed: ${o.orderPlacedDateTime}` : null,
                 `    Items: ${o.orderItems.length}`,
                 ...o.orderItems.map((item) =>
-                  `      ${item.ean} - ${item.title ?? "unknown"} x${item.quantity} @ ${item.offerPrice}`,
+                  `      ${getEan(item)} - ${getTitle(item)} x${item.quantity} @ ${getUnitPrice(item) ?? "N/A"}`,
                 ),
               ]
                 .filter(Boolean)
@@ -73,17 +95,20 @@ export const registerOrderTools = (server: McpServer, client: BolClient): void =
         return toTextResult(
           [
             `Order: ${order.orderId}`,
-            order.dateTimeOrderPlaced ? `Placed: ${order.dateTimeOrderPlaced}` : null,
+            order.orderPlacedDateTime ? `Placed: ${order.orderPlacedDateTime}` : null,
             order.shipmentDetails?.firstName
               ? `Ship to: ${order.shipmentDetails.firstName} ${order.shipmentDetails.surname ?? ""}, ${order.shipmentDetails.city ?? ""}`
               : null,
             `Items (${order.orderItems.length}):`,
             ...order.orderItems.map((item) =>
               [
-                `  - ${item.orderItemId}: ${item.ean}`,
-                `    ${item.title ?? "unknown"} x${item.quantity} @ ${item.offerPrice}`,
-                `    Fulfilment: ${item.fulfilmentMethod} (${item.fulfilmentStatus ?? "unknown"})`,
-                item.latestDeliveryDate ? `    Latest delivery: ${item.latestDeliveryDate}` : null,
+                `  - ${item.orderItemId}: ${getEan(item)}`,
+                `    ${getTitle(item)} x${item.quantity} @ ${getUnitPrice(item) ?? "N/A"}`,
+                `    Fulfilment: ${getFulfilmentMethod(item)}`,
+                item.quantityShipped !== undefined ? `    Shipped: ${item.quantityShipped}` : null,
+                item.quantityCancelled !== undefined ? `    Cancelled: ${item.quantityCancelled}` : null,
+                item.fulfilment?.latestDeliveryDate ? `    Latest delivery: ${item.fulfilment.latestDeliveryDate}` : null,
+                item.fulfilment?.expiryDate ? `    Expiry: ${item.fulfilment.expiryDate}` : null,
               ]
                 .filter(Boolean)
                 .join("\n"),
