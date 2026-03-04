@@ -1,0 +1,67 @@
+{
+  "name": "bol-mcp",
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.28.1",
+  "description": "MCP server for managing orders, offers, shipments, returns, and invoices via the bol.com Retailer API",
+  "type": "module",
+  "bin": {
+    "bol-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "start": "node --enable-source-maps dist/index.js",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "prepublishOnly": "pnpm build",
+    "release": "GITHUB_TOKEN=$(gh auth token) release-it"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bartwaardenburg/bol-mcp.git"
+  },
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "bol",
+    "bol.com",
+    "retailer",
+    "ecommerce",
+    "orders",
+    "offers",
+    "shipments",
+    "returns",
+    "invoices",
+    "model-context-protocol",
+    "automation",
+    "ai",
+    "claude",
+    "llm"
+  ],
+  "author": "Bart Waardenburg",
+  "license": "MIT",
+  "mcpName": "io.github.BartWaardenburg/bol-mcp",
+  "bugs": {
+    "url": "https://github.com/bartwaardenburg/bol-mcp/issues"
+  },
+  "homepage": "https://github.com/bartwaardenburg/bol-mcp#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@release-it/conventional-changelog": "^10.0.5",
+    "@types/node": "^20.19.30",
+    "@vitest/coverage-v8": "^4.0.18",
+    "release-it": "^19.2.4",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.2",
+    "vitest": "^4.0.18"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
