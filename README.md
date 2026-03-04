@@ -4,6 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](https://nodejs.org/)
 [![MCP](https://img.shields.io/badge/MCP-compatible-purple.svg)](https://modelcontextprotocol.io)
+[![CI](https://github.com/bartwaardenburg/bol-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/bartwaardenburg/bol-mcp/actions/workflows/ci.yml)
 
 A community-built [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server for the [bol.com Retailer API](https://api.bol.com/retailer/public/Retailer-API/index.html). Manage orders, offers, shipments, returns, invoices, and commissions — all through natural language via any MCP-compatible AI client.
 
@@ -23,6 +24,7 @@ A community-built [Model Context Protocol](https://modelcontextprotocol.io) (MCP
 - **Response caching** with configurable TTL and automatic invalidation on writes
 - **Rate limit handling** with exponential backoff and `Retry-After` header support
 - **Toolset filtering** to expose only the tool categories you need
+- **Docker support** for containerized deployment
 - **Actionable error messages** with context-aware recovery suggestions
 
 ## Supported Clients
@@ -136,6 +138,26 @@ Add to your Zed settings (`~/.zed/settings.json` on macOS, `~/.config/zed/settin
     }
   }
 }
+```
+
+### Docker
+
+```bash
+docker run -i --rm \
+  -e BOL_CLIENT_ID=your-client-id \
+  -e BOL_CLIENT_SECRET=your-client-secret \
+  ghcr.io/bartwaardenburg/bol-mcp
+```
+
+### Codex CLI (TOML config alternative)
+
+If you prefer editing `~/.codex/config.toml` directly:
+
+```toml
+[mcp_servers.bol-mcp]
+command = "npx"
+args = ["-y", "bol-mcp"]
+env = { "BOL_CLIENT_ID" = "your-client-id", "BOL_CLIENT_SECRET" = "your-client-secret" }
 ```
 
 ### Other MCP Clients
