@@ -13,13 +13,23 @@ A community-built [Model Context Protocol](https://modelcontextprotocol.io) (MCP
 
 ## Features
 
-- **17 tools** across 6 categories covering the bol.com Retailer API v10
-- **Order management** — list and inspect orders with status and fulfilment filtering
-- **Offer CRUD** — create, update, delete offers with price and stock management
-- **Shipment handling** — create shipments with partial quantity support
-- **Return processing** — list, inspect, and handle returns by RMA ID
-- **Invoice access** — retrieve invoices by period with full UBL detail
-- **Commission calculator** — look up commission rates by EAN, condition, and price
+- **67 tools** across 16 categories covering the bol.com Retailer API v10
+- **Order management** — list, inspect, and cancel orders with status and fulfilment filtering
+- **Offer CRUD** — create, update, delete offers with price/stock management and export reports
+- **Shipment handling** — create shipments with partial quantity support and invoice requests
+- **Return processing** — list, inspect, create, and handle returns
+- **Invoice access** — retrieve invoices by period with full UBL detail and specifications
+- **Commission calculator** — single and bulk commission rates by EAN, condition, and price
+- **Product catalog** — browse categories, search products, view competing offers, ratings, and assets
+- **Product content** — manage catalog content, upload reports, and chunk recommendations
+- **Insights** — offer visits, buy box %, performance indicators, product ranks, sales forecasts, and search terms
+- **Inventory** — LVB/FBB inventory levels with filtering
+- **Promotions** — list and inspect promotions and their products
+- **Replenishments** — full FBB replenishment lifecycle: create, update, delivery dates, pickup slots, labels
+- **Retailers** — retailer account information
+- **Shipping labels** — delivery options and label creation
+- **Subscriptions** — webhook/pubsub/SQS event subscriptions with signature key management
+- **Transports** — update transport tracking information
 - **OAuth2 authentication** with automatic token refresh
 - **Input validation** via Zod schemas on every tool for safe, predictable operations
 - **Response caching** with configurable TTL and automatic invalidation on writes
@@ -188,16 +198,37 @@ Generate your credentials in the [bol.com Partner Platform](https://partnerplatf
 | `BOL_MAX_RETRIES` | Maximum retry attempts for rate-limited (429) requests with exponential backoff. | `3` |
 | `BOL_TOOLSETS` | Comma-separated list of tool categories to enable (see [Toolset Filtering](#toolset-filtering)). | All toolsets |
 
-## API Key Setup
+## Authentication
+
+This server authenticates with the bol.com Retailer API using the **OAuth2 client credentials flow**. It automatically obtains and refreshes access tokens — you only need to provide your client ID and secret.
+
+For full details, see the [official bol.com authentication documentation](https://api.bol.com/retailer/public/Retailer-API/authentication.html).
 
 ### Creating Your Credentials
 
-1. Log in to the [bol.com Partner Platform](https://partnerplatform.bol.com/)
-2. Navigate to **Settings** > **API Settings**
-3. Create a new API credential set
-4. Copy the **Client ID** and **Client Secret**
+1. Log in to the [bol.com Seller Dashboard](https://partnerplatform.bol.com/)
+2. Navigate to **Settings** > **Services** > **API Settings**
+3. Provide technical contact details (required before creating credentials)
+4. Create a new API credential set
+5. Copy the **Client ID** and **Client Secret**
 
-The server uses OAuth2 client credentials flow — it automatically obtains and refreshes access tokens using your client ID and secret.
+### How It Works
+
+The server exchanges your credentials for a short-lived access token via the bol.com token endpoint:
+
+- **Endpoint:** `POST https://login.bol.com/token`
+- **Auth:** HTTP Basic with `base64(clientId:clientSecret)`
+- **Grant type:** `client_credentials`
+- **Token lifetime:** ~5 minutes (299 seconds)
+
+Tokens are automatically reused and refreshed before expiry — no manual token management required.
+
+### Security Best Practices
+
+- **Never share** your client ID or client secret, and don't hardcode them in source files
+- **Use environment variables** to pass credentials (as shown in the installation examples)
+- **Create separate credentials** for different applications or integrations
+- **Revoke immediately** if credentials are compromised — removing them in the Seller Dashboard stops access instantly
 
 ## Available Tools
 
@@ -207,6 +238,7 @@ The server uses OAuth2 client credentials flow — it automatically obtains and 
 |---|---|
 | `list_orders` | List orders with optional status and fulfilment method filtering |
 | `get_order` | Get detailed order information by order ID |
+| `cancel_order_items` | Cancel order items with a reason code |
 
 ### Offers
 
@@ -218,6 +250,10 @@ The server uses OAuth2 client credentials flow — it automatically obtains and 
 | `delete_offer` | Delete an offer permanently |
 | `update_offer_price` | Update the pricing for an offer |
 | `update_offer_stock` | Update the stock level for an offer |
+| `request_offer_export` | Request a CSV export of all offers |
+| `get_offer_export` | Download a previously requested offer export |
+| `request_unpublished_offer_report` | Request a report of unpublished offers |
+| `get_unpublished_offer_report` | Download a previously requested unpublished offer report |
 
 ### Shipments
 
@@ -226,6 +262,7 @@ The server uses OAuth2 client credentials flow — it automatically obtains and 
 | `list_shipments` | List shipments with optional order ID and fulfilment method filtering |
 | `get_shipment` | Get shipment details by shipment ID |
 | `create_shipment` | Create a shipment for order items (supports partial quantities) |
+| `get_shipment_invoice_requests` | List invoice requests for shipments |
 
 ### Returns
 
@@ -234,6 +271,7 @@ The server uses OAuth2 client credentials flow — it automatically obtains and 
 | `list_returns` | List returns with optional handled status and fulfilment method filtering |
 | `get_return` | Get return details by RMA ID |
 | `handle_return` | Handle/process a return (accept, reject, repair, etc.) |
+| `create_return` | Create a return for an order item |
 
 ### Invoices
 
@@ -241,12 +279,105 @@ The server uses OAuth2 client credentials flow — it automatically obtains and 
 |---|---|
 | `list_invoices` | List invoices by date period (max 31 days, format: YYYY-MM-DD) |
 | `get_invoice` | Get full invoice details by invoice ID |
+| `get_invoice_specification` | Get detailed invoice specification/line items |
 
 ### Commissions
 
 | Tool | Description |
 |---|---|
 | `get_commission` | Calculate the commission for a product by EAN, condition, and unit price |
+| `get_bulk_commissions` | Calculate commissions for multiple products at once |
+
+### Products
+
+| Tool | Description |
+|---|---|
+| `get_product_categories` | Browse product categories |
+| `get_product_list` | Search and browse products by category or search term |
+| `get_product_list_filters` | Get available product list filters |
+| `get_product_assets` | Get product images and assets by EAN |
+| `get_competing_offers` | Get competing offers for a product by EAN |
+| `get_product_placement` | Get product placement information |
+| `get_price_star_boundaries` | Get price star boundaries for a product |
+| `get_product_ids` | Get product identifiers by EAN |
+| `get_product_ratings` | Get product ratings and reviews |
+
+### Product Content
+
+| Tool | Description |
+|---|---|
+| `get_catalog_product` | Get catalog product details by EAN |
+| `create_product_content` | Create or update product content |
+| `get_upload_report` | Get product content upload report |
+| `get_chunk_recommendations` | Get product content recommendations |
+
+### Insights
+
+| Tool | Description |
+|---|---|
+| `get_offer_insights` | Get offer visit and buy box insights |
+| `get_performance_indicators` | Get retailer performance indicators |
+| `get_product_ranks` | Get product search and browse rankings |
+| `get_sales_forecast` | Get sales forecast for an offer |
+| `get_search_terms` | Get search term volume data |
+
+### Inventory
+
+| Tool | Description |
+|---|---|
+| `get_inventory` | Get LVB/FBB inventory with filtering by stock level, state, and EAN |
+
+### Promotions
+
+| Tool | Description |
+|---|---|
+| `list_promotions` | List available promotions by type |
+| `get_promotion` | Get promotion details |
+| `get_promotion_products` | Get products in a promotion |
+
+### Replenishments
+
+| Tool | Description |
+|---|---|
+| `list_replenishments` | List FBB replenishments with filtering |
+| `get_replenishment` | Get replenishment details |
+| `create_replenishment` | Create a new FBB replenishment |
+| `update_replenishment` | Update or cancel a replenishment |
+| `get_delivery_dates` | Get available FBB delivery dates |
+| `get_pickup_time_slots` | Get pickup time slots for a delivery date |
+| `request_product_destinations` | Request product warehouse destinations |
+| `get_product_destinations` | Get product warehouse destinations |
+
+### Retailers
+
+| Tool | Description |
+|---|---|
+| `get_retailer_information` | Get retailer account information |
+
+### Shipping Labels
+
+| Tool | Description |
+|---|---|
+| `get_delivery_options` | Get available shipping/delivery options for order items |
+| `create_shipping_label` | Create a shipping label for order items |
+
+### Subscriptions
+
+| Tool | Description |
+|---|---|
+| `list_subscriptions` | List all event subscriptions |
+| `get_subscription` | Get subscription details |
+| `create_subscription` | Create an event subscription (webhook, GCP Pub/Sub, or AWS SQS) |
+| `update_subscription` | Update an event subscription |
+| `delete_subscription` | Delete an event subscription |
+| `test_subscription` | Send a test notification to a subscription |
+| `get_signature_keys` | Get public keys for webhook signature validation |
+
+### Transports
+
+| Tool | Description |
+|---|---|
+| `update_transport` | Update transport/tracking information |
 
 ## Toolset Filtering
 
@@ -258,12 +389,22 @@ BOL_TOOLSETS=orders,offers
 
 | Toolset | Tools included |
 |---|---|
-| `orders` | Order listing and details |
-| `offers` | Full offer CRUD, price and stock management |
-| `shipments` | Shipment listing, details, and creation |
-| `returns` | Return listing, details, and handling |
-| `invoices` | Invoice listing and details |
-| `commissions` | Commission calculation |
+| `orders` | Order listing, details, and cancellation |
+| `offers` | Full offer CRUD, price/stock management, export reports |
+| `shipments` | Shipment listing, details, creation, and invoice requests |
+| `returns` | Return listing, details, creation, and handling |
+| `invoices` | Invoice listing, details, and specifications |
+| `commissions` | Single and bulk commission calculation |
+| `products` | Product categories, search, assets, competing offers, ratings, placement |
+| `product-content` | Catalog products, content creation, upload reports, recommendations |
+| `insights` | Offer insights, performance indicators, product ranks, sales forecasts, search terms |
+| `inventory` | LVB/FBB inventory levels |
+| `promotions` | Promotion listing and product details |
+| `replenishments` | FBB replenishment lifecycle, delivery dates, pickup slots, destinations |
+| `retailers` | Retailer account information |
+| `shipping-labels` | Delivery options and shipping label creation |
+| `subscriptions` | Event subscription management and signature keys |
+| `transports` | Transport tracking updates |
 
 When not set, all toolsets are enabled. Invalid names are ignored; if all names are invalid, all toolsets are enabled as a fallback.
 
@@ -311,12 +452,22 @@ src/
   tool-result.ts        # Error formatting with recovery suggestions
   update-checker.ts     # NPM update notifications
   tools/
-    orders.ts           # Order listing and details
-    offers.ts           # Offer CRUD, pricing, and stock management
-    shipments.ts        # Shipment listing, details, and creation
-    returns.ts          # Return listing, details, and handling
-    invoices.ts         # Invoice listing and details
-    commissions.ts      # Commission calculation
+    orders.ts           # Order listing, details, and cancellation
+    offers.ts           # Offer CRUD, pricing, stock, and export reports
+    shipments.ts        # Shipment listing, details, creation, and invoices
+    returns.ts          # Return listing, details, creation, and handling
+    invoices.ts         # Invoice listing, details, and specifications
+    commissions.ts      # Single and bulk commission calculation
+    products.ts         # Product catalog, search, competing offers, ratings
+    product-content.ts  # Catalog content management and recommendations
+    insights.ts         # Offer insights, performance, ranks, forecasts
+    inventory.ts        # LVB/FBB inventory management
+    promotions.ts       # Promotion listing and products
+    replenishments.ts   # FBB replenishment lifecycle
+    retailers.ts        # Retailer account information
+    shipping-labels.ts  # Delivery options and label creation
+    subscriptions.ts    # Event subscription management
+    transports.ts       # Transport tracking updates
 ```
 
 ## Requirements
