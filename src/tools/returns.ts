@@ -87,7 +87,7 @@ export const registerReturnTools = (server: McpServer, client: BolClient): void 
             ...ret.returnItems.map((item) =>
               [
                 `  - ${item.ean}: ${item.title ?? "unknown"} x${item.expectedQuantity}`,
-                `    Order: ${item.orderId} / Item: ${item.orderItemId}`,
+                `    Order: ${item.orderId}${item.rmaId ? ` / RMA: ${item.rmaId}` : ""}`,
                 item.returnReason
                   ? `    Reason: ${item.returnReason.mainReason}${item.returnReason.detailedReason ? ` - ${item.returnReason.detailedReason}` : ""}${item.returnReason.customerComments ? ` ("${item.returnReason.customerComments}")` : ""}`
                   : null,

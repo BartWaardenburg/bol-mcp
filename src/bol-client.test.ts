@@ -472,7 +472,7 @@ describe("BolClient", () => {
   });
 
   describe("getInvoices", () => {
-    it("builds query params with period", async () => {
+    it("builds query params with period-start-date and period-end-date", async () => {
       mockFetch
         .mockResolvedValueOnce(tokenResponse())
         .mockResolvedValueOnce(jsonResponse({ invoiceListItems: [] }));
@@ -480,10 +480,11 @@ describe("BolClient", () => {
       await client.getInvoices("2024-01-01", "2024-01-31");
 
       const [url] = mockFetch.mock.calls[1];
-      expect(url).toContain("period=2024-01-01%2F2024-01-31");
+      expect(url).toContain("period-start-date=2024-01-01");
+      expect(url).toContain("period-end-date=2024-01-31");
     });
 
-    it("uses same date for start and end when only start provided", async () => {
+    it("uses only start date when only start provided", async () => {
       mockFetch
         .mockResolvedValueOnce(tokenResponse())
         .mockResolvedValueOnce(jsonResponse({ invoiceListItems: [] }));
@@ -491,7 +492,8 @@ describe("BolClient", () => {
       await client.getInvoices("2024-01-01");
 
       const [url] = mockFetch.mock.calls[1];
-      expect(url).toContain("period=2024-01-01%2F2024-01-01");
+      expect(url).toContain("period-start-date=2024-01-01");
+      expect(url).not.toContain("period-end-date");
     });
 
     it("omits period param when no dates provided", async () => {

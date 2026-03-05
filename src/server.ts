@@ -7,13 +7,59 @@ import { registerShipmentTools } from "./tools/shipments.js";
 import { registerReturnTools } from "./tools/returns.js";
 import { registerInvoiceTools } from "./tools/invoices.js";
 import { registerCommissionTools } from "./tools/commissions.js";
+import { registerProcessStatusTools } from "./tools/process-status.js";
+import { registerProductTools } from "./tools/products.js";
+import { registerProductContentTools } from "./tools/product-content.js";
+import { registerInsightTools } from "./tools/insights.js";
+import { registerInventoryTools } from "./tools/inventory.js";
+import { registerPromotionTools } from "./tools/promotions.js";
+import { registerReplenishmentTools } from "./tools/replenishments.js";
+import { registerRetailerTools } from "./tools/retailers.js";
+import { registerShippingLabelTools } from "./tools/shipping-labels.js";
+import { registerSubscriptionTools } from "./tools/subscriptions.js";
+import { registerTransportTools } from "./tools/transports.js";
 
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json") as { version: string };
 
-export type Toolset = "orders" | "offers" | "shipments" | "returns" | "invoices" | "commissions";
+export type Toolset =
+  | "orders"
+  | "offers"
+  | "shipments"
+  | "returns"
+  | "invoices"
+  | "commissions"
+  | "process-status"
+  | "products"
+  | "product-content"
+  | "insights"
+  | "inventory"
+  | "promotions"
+  | "replenishments"
+  | "retailers"
+  | "shipping-labels"
+  | "subscriptions"
+  | "transports";
 
-const ALL_TOOLSETS: Toolset[] = ["orders", "offers", "shipments", "returns", "invoices", "commissions"];
+const ALL_TOOLSETS: Toolset[] = [
+  "orders",
+  "offers",
+  "shipments",
+  "returns",
+  "invoices",
+  "commissions",
+  "process-status",
+  "products",
+  "product-content",
+  "insights",
+  "inventory",
+  "promotions",
+  "replenishments",
+  "retailers",
+  "shipping-labels",
+  "subscriptions",
+  "transports",
+];
 
 export const parseToolsets = (env?: string): Set<Toolset> => {
   if (!env) return new Set(ALL_TOOLSETS);
@@ -39,6 +85,17 @@ const toolsetRegistry: Record<Toolset, ToolRegisterer[]> = {
   returns: [registerReturnTools],
   invoices: [registerInvoiceTools],
   commissions: [registerCommissionTools],
+  "process-status": [registerProcessStatusTools],
+  products: [registerProductTools],
+  "product-content": [registerProductContentTools],
+  insights: [registerInsightTools],
+  inventory: [registerInventoryTools],
+  promotions: [registerPromotionTools],
+  replenishments: [registerReplenishmentTools],
+  retailers: [registerRetailerTools],
+  "shipping-labels": [registerShippingLabelTools],
+  subscriptions: [registerSubscriptionTools],
+  transports: [registerTransportTools],
 };
 
 export const createServer = (

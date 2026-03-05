@@ -16,9 +16,9 @@ describe("createServer", () => {
     expect(server).toBeDefined();
   });
 
-  it("registers all 17 tools", () => {
+  it("registers all tools", () => {
     const tools = getTools();
-    expect(Object.keys(tools)).toHaveLength(17);
+    expect(Object.keys(tools)).toHaveLength(66);
   });
 
   it("registers all expected tool names", () => {
@@ -67,12 +67,12 @@ describe("createServer", () => {
 describe("parseToolsets", () => {
   it("returns all toolsets when env is undefined", () => {
     const result = parseToolsets(undefined);
-    expect(result.size).toBe(6);
+    expect(result.size).toBe(17);
   });
 
   it("returns all toolsets when env is empty", () => {
     const result = parseToolsets("");
-    expect(result.size).toBe(6);
+    expect(result.size).toBe(17);
   });
 
   it("parses a single toolset", () => {
@@ -92,7 +92,7 @@ describe("parseToolsets", () => {
 
   it("returns all toolsets if all names are invalid", () => {
     const result = parseToolsets("invalid,unknown");
-    expect(result.size).toBe(6);
+    expect(result.size).toBe(17);
   });
 
   it("handles whitespace in toolset names", () => {

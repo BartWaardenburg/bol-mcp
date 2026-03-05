@@ -11,9 +11,23 @@ A community-built [Model Context Protocol](https://modelcontextprotocol.io) (MCP
 
 > **Note:** This is an unofficial, community-maintained project and is not affiliated with or endorsed by bol.com.
 
+## API Coverage
+
+bol.com exposes several APIs for different purposes. This MCP server covers the **Retailer API v10** and the **Shared API** — the core APIs for marketplace sellers managing their day-to-day operations.
+
+| API | Status | Description |
+|---|---|---|
+| **Retailer API v10** | Covered | Core seller operations: orders, offers, shipments, returns, invoices, commissions, products, inventory, promotions, replenishments, subscriptions, and more |
+| **Shared API v10** | Covered | Cross-API utilities for tracking asynchronous process statuses |
+| **Offer API v11** | Not covered | Next-generation offer management (v11 successor to the Retailer API offer endpoints) |
+| **Advertiser API v11** | Not covered | Sponsored product campaigns, ad groups, keywords, budgets, and performance reporting |
+| **Economic Operators API** | Not covered | Economic operator information and regulatory compliance data |
+
+> The Retailer API v10 offer endpoints included in this MCP are fully functional. The Offer API v11 is a newer version with an updated endpoint structure — support may be added in a future release.
+
 ## Features
 
-- **67 tools** across 16 categories covering the bol.com Retailer API v10
+- **66 tools** across 17 categories covering the bol.com Retailer API v10
 - **Order management** — list, inspect, and cancel orders with status and fulfilment filtering
 - **Offer CRUD** — create, update, delete offers with price/stock management and export reports
 - **Shipment handling** — create shipments with partial quantity support and invoice requests
@@ -30,6 +44,7 @@ A community-built [Model Context Protocol](https://modelcontextprotocol.io) (MCP
 - **Shipping labels** — delivery options and label creation
 - **Subscriptions** — webhook/pubsub/SQS event subscriptions with signature key management
 - **Transports** — update transport tracking information
+- **Process status** — track asynchronous operations by ID, entity, or in bulk
 - **OAuth2 authentication** with automatic token refresh
 - **Input validation** via Zod schemas on every tool for safe, predictable operations
 - **Response caching** with configurable TTL and automatic invalidation on writes
@@ -379,6 +394,14 @@ Tokens are automatically reused and refreshed before expiry — no manual token 
 |---|---|
 | `update_transport` | Update transport/tracking information |
 
+### Process Status
+
+| Tool | Description |
+|---|---|
+| `get_process_status` | Get the status of an asynchronous process by process status ID |
+| `get_process_status_by_entity` | Get process statuses by entity ID and event type |
+| `get_process_status_bulk` | Get the status of multiple processes by their IDs (up to 1000) |
+
 ## Toolset Filtering
 
 Reduce context window usage by enabling only the tool categories you need. Set the `BOL_TOOLSETS` environment variable to a comma-separated list:
@@ -405,6 +428,7 @@ BOL_TOOLSETS=orders,offers
 | `shipping-labels` | Delivery options and shipping label creation |
 | `subscriptions` | Event subscription management and signature keys |
 | `transports` | Transport tracking updates |
+| `process-status` | Asynchronous process status tracking (by ID, entity, or bulk) |
 
 When not set, all toolsets are enabled. Invalid names are ignored; if all names are invalid, all toolsets are enabled as a fallback.
 
@@ -468,6 +492,7 @@ src/
     shipping-labels.ts  # Delivery options and label creation
     subscriptions.ts    # Event subscription management
     transports.ts       # Transport tracking updates
+    process-status.ts   # Asynchronous process status tracking
 ```
 
 ## Requirements

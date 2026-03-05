@@ -81,7 +81,7 @@ export const registerShipmentTools = (server: McpServer, client: BolClient): voi
               ? `Ship to: ${shipment.shipmentDetails.firstName} ${shipment.shipmentDetails.surname ?? ""}, ${shipment.shipmentDetails.city ?? ""}`
               : null,
             shipment.shipmentItems
-              ? `Items (${shipment.shipmentItems.length}):\n${shipment.shipmentItems.map((item) => `  - Order item ${item.orderItemId} (order ${item.orderId})`).join("\n")}`
+              ? `Items (${shipment.shipmentItems.length}):\n${shipment.shipmentItems.map((item) => `  - Order item ${item.orderItemId}${item.product?.ean ? ` (EAN: ${item.product.ean})` : ""}`).join("\n")}`
               : null,
           ]
             .filter(Boolean)
@@ -140,6 +140,41 @@ export const registerShipmentTools = (server: McpServer, client: BolClient): voi
             `Process status: ${result.processStatusId} (${result.status})`,
             result.entityId ? `Entity ID: ${result.entityId}` : null,
             "Use get_process_status to check when the shipment is created.",
+          ]
+            .filter(Boolean)
+            .join("\n"),
+          result as Record<string, unknown>,
+        );
+      } catch (error) {
+        return toErrorResult(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "upload_shipment_invoice",
+    {
+      title: "Upload Shipment Invoice",
+      description:
+        "Upload an invoice for a specific shipment. Provide the shipment ID and the invoice content. " +
+        "Returns a process status — the upload is processed asynchronously.",
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+
+      inputSchema: z.object({
+        shipmentId: z.string().min(1).describe("The bol.com shipment ID."),
+        invoice: z.string().min(1).describe("The invoice content to upload."),
+      }),
+    },
+    async ({ shipmentId, invoice }) => {
+      try {
+        const result = await client.uploadShipmentInvoice(shipmentId, invoice);
+
+        return toTextResult(
+          [
+            `Invoice upload initiated for shipment ${shipmentId}`,
+            `Process status: ${result.processStatusId} (${result.status})`,
+            result.entityId ? `Entity ID: ${result.entityId}` : null,
+            "Use get_process_status to check when the upload is complete.",
           ]
             .filter(Boolean)
             .join("\n"),
