@@ -77,10 +77,14 @@ describe("Order Tools", () => {
             orderItems: [
               {
                 orderItemId: "item-1",
-                product: { ean: "1234567890123", title: "Test Product" },
+                ean: "1234567890123",
+                fulfilmentMethod: "FBR",
+                fulfilmentStatus: "OPEN",
                 quantity: 2,
-                unitPrice: 19.99,
-                fulfilment: { method: "FBR" },
+                quantityShipped: 0,
+                quantityCancelled: 0,
+                cancellationRequest: false,
+                latestChangedDateTime: "2024-01-01T12:00:00+01:00",
               },
             ],
           },
@@ -94,7 +98,6 @@ describe("Order Tools", () => {
       expect(result.isError).toBeUndefined();
       expect(getText(result)).toContain("ORD-1");
       expect(getText(result)).toContain("1234567890123");
-      expect(getText(result)).toContain("Test Product");
       expect(result.structuredContent).toBeDefined();
     });
 
@@ -117,7 +120,7 @@ describe("Order Tools", () => {
         status: "OPEN",
       });
 
-      expect(client.getOrders).toHaveBeenCalledWith(2, "FBB", "OPEN");
+      expect(client.getOrders).toHaveBeenCalledWith(2, "FBB", "OPEN", undefined, undefined, undefined);
     });
 
     it("returns error result on API failure", async () => {
@@ -131,20 +134,23 @@ describe("Order Tools", () => {
       expect(getText(result)).toContain("API failed");
     });
 
-    it("handles v9 flat fields gracefully", async () => {
+    it("returns reduced order items with flat fields", async () => {
       client.getOrders.mockResolvedValue({
         orders: [
           {
             orderId: "ORD-2",
+            orderPlacedDateTime: "2024-01-02T10:00:00+01:00",
             orderItems: [
               {
                 orderItemId: "item-1",
                 ean: "9876543210987",
-                title: "Legacy Product",
-                quantity: 1,
-                offerPrice: 9.99,
                 fulfilmentMethod: "FBR",
-                fulfilment: { method: "FBR" },
+                fulfilmentStatus: "OPEN",
+                quantity: 1,
+                quantityShipped: 0,
+                quantityCancelled: 0,
+                cancellationRequest: false,
+                latestChangedDateTime: "2024-01-02T10:00:00+01:00",
               },
             ],
           },
@@ -153,7 +159,7 @@ describe("Order Tools", () => {
 
       const result = (await server.getHandler("list_orders")({ page: 1 })) as ToolResult;
       expect(getText(result)).toContain("9876543210987");
-      expect(getText(result)).toContain("Legacy Product");
+      expect(getText(result)).toContain("ORD-2");
     });
   });
 
@@ -318,6 +324,7 @@ describe("Offer Tools", () => {
       const result = (await server.getHandler("update_offer")({
         offerId: "OFF-1",
         reference: "new-ref",
+        fulfilment: { method: "FBR" },
       })) as ToolResult;
 
       expect(result.isError).toBeUndefined();
@@ -330,6 +337,7 @@ describe("Offer Tools", () => {
 
       const result = (await server.getHandler("update_offer")({
         offerId: "OFF-1",
+        fulfilment: { method: "FBR" },
       })) as ToolResult;
 
       expect(result.isError).toBe(true);

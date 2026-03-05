@@ -135,7 +135,7 @@ export const registerReturnTools = (server: McpServer, client: BolClient): void 
             "STILL_APPROVED",
           ])
           .describe("How the return was handled."),
-        quantityReturned: z.number().int().min(1).describe("Number of items returned."),
+        quantityReturned: z.number().int().min(1).max(9999).describe("Number of items returned."),
       }),
     },
     async ({ rmaId, handlingResult, quantityReturned }) => {
@@ -150,6 +150,55 @@ export const registerReturnTools = (server: McpServer, client: BolClient): void 
             `Return RMA ${rmaId} handling initiated: ${handlingResult} (${quantityReturned} items)`,
             `Process status: ${result.processStatusId} (${result.status})`,
           ].join("\n"),
+          result as Record<string, unknown>,
+        );
+      } catch (error) {
+        return toErrorResult(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "create_return",
+    {
+      title: "Create Return",
+      description:
+        "Create a return and automatically handle it with the provided handling result. " +
+        "When successfully created, the resulting return ID is provided in the process status. " +
+        "Returns a process status — the return is created asynchronously.",
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+
+      inputSchema: z.object({
+        orderItemId: z.string().min(1).describe("The order item ID to create a return for."),
+        quantityReturned: z.number().int().min(1).max(9999).describe("The quantity of items returned."),
+        handlingResult: z
+          .enum([
+            "RETURN_RECEIVED",
+            "EXCHANGE_PRODUCT",
+            "RETURN_DOES_NOT_MEET_CONDITIONS",
+            "REPAIR_PRODUCT",
+            "CUSTOMER_KEEPS_PRODUCT_PAID",
+          ])
+          .describe("How the return should be handled."),
+      }),
+    },
+    async ({ orderItemId, quantityReturned, handlingResult }) => {
+      try {
+        const result = await client.createReturn({
+          orderItemId,
+          quantityReturned,
+          handlingResult,
+        });
+
+        return toTextResult(
+          [
+            `Return created for order item ${orderItemId}`,
+            `Handling: ${handlingResult} (${quantityReturned} items)`,
+            `Process status: ${result.processStatusId} (${result.status})`,
+            result.entityId ? `Return ID: ${result.entityId}` : null,
+          ]
+            .filter(Boolean)
+            .join("\n"),
           result as Record<string, unknown>,
         );
       } catch (error) {

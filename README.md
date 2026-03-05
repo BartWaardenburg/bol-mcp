@@ -27,7 +27,7 @@ bol.com exposes several APIs for different purposes. This MCP server covers the 
 
 ## Features
 
-- **66 tools** across 17 categories covering the bol.com Retailer API v10
+- **76 tools** across 17 categories covering the bol.com Retailer API v10
 - **Order management** — list, inspect, and cancel orders with status and fulfilment filtering
 - **Offer CRUD** — create, update, delete offers with price/stock management and export reports
 - **Shipment handling** — create shipments with partial quantity support and invoice requests

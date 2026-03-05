@@ -29,7 +29,7 @@ export const registerRetailerTools = (server: McpServer, client: BolClient): voi
             retailer.retailerId ? `ID: ${retailer.retailerId}` : null,
             retailer.companyName ? `Company: ${retailer.companyName}` : null,
             retailer.displayName ? `Display Name: ${retailer.displayName}` : null,
-            retailer.countryCode ? `Country: ${retailer.countryCode}` : null,
+            retailer.topRetailer !== undefined ? `Top Retailer: ${retailer.topRetailer}` : null,
             retailer.registrationDate ? `Registered: ${retailer.registrationDate}` : null,
           ]
             .filter(Boolean)

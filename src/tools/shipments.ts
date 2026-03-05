@@ -113,8 +113,9 @@ export const registerShipmentTools = (server: McpServer, client: BolClient): voi
             }),
           )
           .min(1)
+          .max(100)
           .describe("Order items to include in the shipment."),
-        shipmentReference: z.string().optional().describe("Your reference for this shipment."),
+        shipmentReference: z.string().max(90).optional().describe("Your reference for this shipment."),
         shippingLabelId: z.string().optional().describe("Shipping label ID if using bol.com shipping labels."),
         transport: z
           .object({
@@ -144,6 +145,54 @@ export const registerShipmentTools = (server: McpServer, client: BolClient): voi
             .filter(Boolean)
             .join("\n"),
           result as Record<string, unknown>,
+        );
+      } catch (error) {
+        return toErrorResult(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "get_invoice_requests",
+    {
+      title: "Get Invoice Requests",
+      description:
+        "Get a list of invoice requests initiated by customers for shipments. " +
+        "Filter by shipment ID or state (OPEN, UPLOAD_ERROR, ALL).",
+      annotations: { readOnlyHint: true, openWorldHint: true },
+
+      inputSchema: z.object({
+        shipmentId: z.string().optional().describe("Filter by shipment ID."),
+        page: z.number().int().min(1).default(1).describe("Page number (1-based)."),
+        state: z
+          .enum(["OPEN", "UPLOAD_ERROR", "ALL"])
+          .optional()
+          .describe("Filter by invoice request state: OPEN (requires action), UPLOAD_ERROR, or ALL."),
+      }),
+    },
+    async ({ shipmentId, page, state }) => {
+      try {
+        const response = await client.getShipmentInvoiceRequests(page, shipmentId, state);
+        const requests = response.invoiceRequests ?? [];
+
+        if (requests.length === 0) {
+          return toTextResult("No invoice requests found.");
+        }
+
+        return toTextResult(
+          [
+            `Invoice requests (page ${page}): ${requests.length} results`,
+            ...requests.map((r) =>
+              [
+                `  - Shipment ${r.shipmentId}`,
+                r.orderId ? `    Order: ${r.orderId}` : null,
+                `    Status: ${r.status}`,
+              ]
+                .filter(Boolean)
+                .join("\n"),
+            ),
+          ].join("\n"),
+          { invoiceRequests: requests } as Record<string, unknown>,
         );
       } catch (error) {
         return toErrorResult(error);

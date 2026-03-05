@@ -10,7 +10,7 @@ export const registerInvoiceTools = (server: McpServer, client: BolClient): void
       title: "List Invoices",
       description:
         "List invoices from bol.com. Optionally filter by date range using period start and end dates (format: YYYY-MM-DD). " +
-        "The date range must not exceed 32 days.",
+        "The date range must not exceed 31 days.",
       annotations: { readOnlyHint: true, openWorldHint: true },
 
       inputSchema: z.object({
@@ -81,6 +81,34 @@ export const registerInvoiceTools = (server: McpServer, client: BolClient): void
         return toTextResult(
           `Invoice ${invoiceId} details retrieved.`,
           invoice as Record<string, unknown>,
+        );
+      } catch (error) {
+        return toErrorResult(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "get_invoice_specification",
+    {
+      title: "Get Invoice Specification",
+      description:
+        "Get an invoice specification with a paginated list of its transactions. " +
+        "The specification contains detailed line items for the invoice.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
+
+      inputSchema: z.object({
+        invoiceId: z.string().min(1).describe("The bol.com invoice ID."),
+        page: z.number().int().min(1).optional().describe("Page number (max 25,000 lines per page)."),
+      }),
+    },
+    async ({ invoiceId, page }) => {
+      try {
+        const specification = await client.getInvoiceSpecification(invoiceId, page);
+
+        return toTextResult(
+          `Invoice specification for ${invoiceId} retrieved.`,
+          specification as Record<string, unknown>,
         );
       } catch (error) {
         return toErrorResult(error);

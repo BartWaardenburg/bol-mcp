@@ -18,7 +18,7 @@ describe("createServer", () => {
 
   it("registers all tools", () => {
     const tools = getTools();
-    expect(Object.keys(tools)).toHaveLength(66);
+    expect(Object.keys(tools)).toHaveLength(76);
   });
 
   it("registers all expected tool names", () => {
@@ -28,6 +28,7 @@ describe("createServer", () => {
       // Orders
       "list_orders",
       "get_order",
+      "cancel_order_item",
       // Offers
       "get_offer",
       "create_offer",
@@ -35,19 +36,29 @@ describe("createServer", () => {
       "delete_offer",
       "update_offer_price",
       "update_offer_stock",
+      "request_offer_export",
+      "get_offer_export",
+      "request_unpublished_offer_report",
+      "get_unpublished_offer_report",
       // Shipments
       "list_shipments",
       "get_shipment",
       "create_shipment",
+      "get_invoice_requests",
+      "upload_shipment_invoice",
       // Returns
       "list_returns",
       "get_return",
       "handle_return",
+      "create_return",
       // Invoices
       "list_invoices",
       "get_invoice",
+      "get_invoice_specification",
       // Commissions
       "get_commission",
+      "get_bulk_commissions",
+      "get_commission_rates",
     ];
 
     for (const name of expectedTools) {

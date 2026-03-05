@@ -75,27 +75,17 @@ export interface OrderItem {
   discounts?: OrderItemDiscount[];
   additionalServices?: { serviceType: string }[];
   latestChangedDateTime?: string;
-  /** @deprecated v9 flat field — kept for backward compatibility */
+  /** Present on ReducedOrderItem (list response) as flat fields */
   ean?: string;
-  /** @deprecated v9 flat field — kept for backward compatibility */
   title?: string;
-  /** @deprecated v9 flat field — kept for backward compatibility */
   offerPrice?: number;
-  /** @deprecated v9 flat field — kept for backward compatibility */
   offerCondition?: string;
-  /** @deprecated v9 flat field — kept for backward compatibility */
   offerReference?: string;
-  /** @deprecated v9 flat field — kept for backward compatibility */
   fulfilmentMethod?: string;
-  /** @deprecated v9 flat field — kept for backward compatibility */
   fulfilmentStatus?: string;
-  /** @deprecated v9 flat field — kept for backward compatibility */
   latestDeliveryDate?: string;
-  /** @deprecated v9 flat field — kept for backward compatibility */
   exactDeliveryDate?: string;
-  /** @deprecated v9 flat field — kept for backward compatibility */
   expiryDate?: string;
-  /** @deprecated v9 flat field — kept for backward compatibility */
   cancelRequest?: boolean;
   selectedDeliveryWindow?: {
     startDateTime?: string;
@@ -485,15 +475,27 @@ export interface BulkCommissionRatesResponse {
 
 // --- Process Status ---
 
+export interface ProcessStatusLink {
+  rel?: string;
+  href?: string;
+  hreflang?: string;
+  media?: string;
+  title?: string;
+  type?: string;
+  deprecation?: string;
+  profile?: string;
+  name?: string;
+}
+
 export interface ProcessStatus {
-  processStatusId: string;
+  processStatusId?: string;
   entityId?: string;
-  eventType?: string;
-  description?: string;
-  status: string;
+  eventType: string;
+  description: string;
+  status: "PENDING" | "SUCCESS" | "FAILURE" | "TIMEOUT";
   errorMessage?: string;
-  createTimestamp?: string;
-  links?: { rel: string; href: string; method: string }[];
+  createTimestamp: string;
+  links: ProcessStatusLink[];
   [key: string]: unknown;
 }
 
@@ -555,6 +557,7 @@ export interface ProductListRequest {
   filterValues?: { filterValueId: string }[];
   sort?: string;
   page?: number;
+  language?: string;
 }
 
 export interface ProductListResponse {

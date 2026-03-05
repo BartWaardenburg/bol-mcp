@@ -457,7 +457,7 @@ export const registerReplenishmentTools = (server: McpServer, client: BolClient)
 
       inputSchema: z.object({
         labelFormat: z
-          .enum(["AVERY_J8159", "AVERY_J8160", "AVERY_3474", "DYMO_99012", "BROTHER_DK11209", "ZEBRA_Z_PERFORM_1000T"])
+          .enum(["AVERY_J8159", "AVERY_J8160", "AVERY_3474", "DYMO_99012", "BROTHER_DK11208D", "ZEBRA_Z_PERFORM_1000T"])
           .describe("Label format."),
         products: z
           .array(

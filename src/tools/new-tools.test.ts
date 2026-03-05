@@ -74,11 +74,15 @@ const createMockClient = (): Record<string, ReturnType<typeof vi.fn>> => ({
   getPickupTimeSlots: vi.fn(),
   requestProductDestinations: vi.fn(),
   getProductDestinations: vi.fn(),
+  getLoadCarrierLabels: vi.fn(),
+  getPickList: vi.fn(),
+  requestProductLabels: vi.fn(),
   // Retailers
   getRetailerInformation: vi.fn(),
   // Shipping Labels
   getDeliveryOptions: vi.fn(),
   createShippingLabel: vi.fn(),
+  getShippingLabel: vi.fn(),
   // Subscriptions
   getSubscriptions: vi.fn(),
   getSubscription: vi.fn(),
@@ -973,7 +977,9 @@ describe("Replenishment Tools", () => {
 
       const result = (await server.getHandler("create_replenishment")({
         reference: "MY-REP",
-        deliveryDate: "2024-02-01",
+        labelingByBol: false,
+        numberOfLoadCarriers: 1,
+        deliveryInfo: { expectedDeliveryDate: "2024-02-01", transporterCode: "POSTNL" },
         lines: [{ ean: "1234567890123", quantity: 50 }],
       })) as ToolResult;
 
@@ -989,7 +995,9 @@ describe("Replenishment Tools", () => {
 
       const result = (await server.getHandler("create_replenishment")({
         reference: "MY-REP",
-        deliveryDate: "2024-02-01",
+        labelingByBol: false,
+        numberOfLoadCarriers: 1,
+        deliveryInfo: { expectedDeliveryDate: "2024-02-01", transporterCode: "POSTNL" },
         lines: [{ ean: "1234567890123", quantity: 50 }],
       })) as ToolResult;
 
@@ -1061,11 +1069,17 @@ describe("Replenishment Tools", () => {
       });
 
       const result = (await server.getHandler("get_pickup_time_slots")({
-        deliveryDate: "2024-02-01",
+        address: {
+          streetName: "Papiermolenweg",
+          houseNumber: "2",
+          zipCode: "3014 DC",
+          city: "Rotterdam",
+          countryCode: "NL",
+        },
+        numberOfLoadCarriers: 1,
       })) as ToolResult;
 
       expect(result.isError).toBeUndefined();
-      expect(getText(result)).toContain("2024-02-01");
       expect(getText(result)).toContain("08:00");
       expect(getText(result)).toContain("12:00");
       expect(result.structuredContent).toBeDefined();
@@ -1075,7 +1089,14 @@ describe("Replenishment Tools", () => {
       client.getPickupTimeSlots.mockRejectedValue(apiError);
 
       const result = (await server.getHandler("get_pickup_time_slots")({
-        deliveryDate: "2024-02-01",
+        address: {
+          streetName: "Papiermolenweg",
+          houseNumber: "2",
+          zipCode: "3014 DC",
+          city: "Rotterdam",
+          countryCode: "NL",
+        },
+        numberOfLoadCarriers: 1,
       })) as ToolResult;
 
       expect(result.isError).toBe(true);
@@ -1141,6 +1162,84 @@ describe("Replenishment Tools", () => {
       expect(result.isError).toBe(true);
     });
   });
+
+  describe("get_load_carrier_labels", () => {
+    it("returns labels successfully", async () => {
+      client.getLoadCarrierLabels.mockResolvedValue("PDF_BINARY_DATA");
+
+      const result = (await server.getHandler("get_load_carrier_labels")({
+        replenishmentId: "REP-1",
+        labelType: "WAREHOUSE",
+      })) as ToolResult;
+
+      expect(result.isError).toBeUndefined();
+      expect(getText(result)).toContain("REP-1");
+      expect(client.getLoadCarrierLabels).toHaveBeenCalledWith("REP-1", "WAREHOUSE");
+    });
+
+    it("returns error result on API failure", async () => {
+      client.getLoadCarrierLabels.mockRejectedValue(apiError);
+
+      const result = (await server.getHandler("get_load_carrier_labels")({
+        replenishmentId: "REP-1",
+      })) as ToolResult;
+
+      expect(result.isError).toBe(true);
+    });
+  });
+
+  describe("get_pick_list", () => {
+    it("returns pick list successfully", async () => {
+      client.getPickList.mockResolvedValue("PDF_BINARY_DATA");
+
+      const result = (await server.getHandler("get_pick_list")({
+        replenishmentId: "REP-1",
+      })) as ToolResult;
+
+      expect(result.isError).toBeUndefined();
+      expect(getText(result)).toContain("REP-1");
+      expect(client.getPickList).toHaveBeenCalledWith("REP-1");
+    });
+
+    it("returns error result on API failure", async () => {
+      client.getPickList.mockRejectedValue(apiError);
+
+      const result = (await server.getHandler("get_pick_list")({
+        replenishmentId: "REP-1",
+      })) as ToolResult;
+
+      expect(result.isError).toBe(true);
+    });
+  });
+
+  describe("request_product_labels", () => {
+    it("returns labels successfully", async () => {
+      client.requestProductLabels.mockResolvedValue("PDF_BINARY_DATA");
+
+      const result = (await server.getHandler("request_product_labels")({
+        labelFormat: "AVERY_J8159",
+        products: [{ ean: "1234567890123", quantity: 10 }],
+      })) as ToolResult;
+
+      expect(result.isError).toBeUndefined();
+      expect(getText(result)).toContain("1 product(s)");
+      expect(client.requestProductLabels).toHaveBeenCalledWith({
+        labelFormat: "AVERY_J8159",
+        products: [{ ean: "1234567890123", quantity: 10 }],
+      });
+    });
+
+    it("returns error result on API failure", async () => {
+      client.requestProductLabels.mockRejectedValue(apiError);
+
+      const result = (await server.getHandler("request_product_labels")({
+        labelFormat: "AVERY_J8159",
+        products: [{ ean: "1234567890123", quantity: 10 }],
+      })) as ToolResult;
+
+      expect(result.isError).toBe(true);
+    });
+  });
 });
 
 // --- Retailer Tools ---
@@ -1161,7 +1260,7 @@ describe("Retailer Tools", () => {
         retailerId: "RET-1",
         displayName: "Test Shop",
         companyName: "Test Shop BV",
-        countryCode: "NL",
+        topRetailer: true,
         registrationDate: "2020-01-15",
       });
 
@@ -1171,7 +1270,7 @@ describe("Retailer Tools", () => {
       expect(getText(result)).toContain("Test Shop");
       expect(getText(result)).toContain("RET-1");
       expect(getText(result)).toContain("Test Shop BV");
-      expect(getText(result)).toContain("NL");
+      expect(getText(result)).toContain("Top Retailer: true");
       expect(result.structuredContent).toBeDefined();
     });
 
@@ -1259,6 +1358,30 @@ describe("Shipping Label Tools", () => {
       const result = (await server.getHandler("create_shipping_label")({
         orderItems: [{ orderItemId: "item-1" }],
         shippingLabelOfferId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      })) as ToolResult;
+
+      expect(result.isError).toBe(true);
+    });
+  });
+
+  describe("get_shipping_label", () => {
+    it("returns shipping label successfully", async () => {
+      client.getShippingLabel.mockResolvedValue("PDF_BINARY_DATA");
+
+      const result = (await server.getHandler("get_shipping_label")({
+        shippingLabelId: "LABEL-1",
+      })) as ToolResult;
+
+      expect(result.isError).toBeUndefined();
+      expect(getText(result)).toContain("LABEL-1");
+      expect(client.getShippingLabel).toHaveBeenCalledWith("LABEL-1");
+    });
+
+    it("returns error result on API failure", async () => {
+      client.getShippingLabel.mockRejectedValue(apiError);
+
+      const result = (await server.getHandler("get_shipping_label")({
+        shippingLabelId: "LABEL-1",
       })) as ToolResult;
 
       expect(result.isError).toBe(true);

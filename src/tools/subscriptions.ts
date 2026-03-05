@@ -88,7 +88,7 @@ export const registerSubscriptionTools = (server: McpServer, client: BolClient):
     {
       title: "Create Subscription",
       description:
-        "Create a new event subscription. Subscribe to events like PROCESS_STATUS, SHIPMENT, ORDER, OFFER, etc. " +
+        "Create a new event subscription. Subscribe to events like PROCESS_STATUS, SHIPMENT, PRICE_STAR_BOUNDARY, COMPETING_OFFER, OFFER_FOR_SALE, OFFER_NOT_FOR_SALE. " +
         "Supports WEBHOOK, GCP_PUBSUB, and AWS_SQS subscription types.",
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
 
@@ -98,10 +98,10 @@ export const registerSubscriptionTools = (server: McpServer, client: BolClient):
             z.enum([
               "PROCESS_STATUS",
               "SHIPMENT",
-              "ORDER",
-              "OFFER",
-              "RETURN",
-              "INVENTORY",
+              "PRICE_STAR_BOUNDARY",
+              "COMPETING_OFFER",
+              "OFFER_FOR_SALE",
+              "OFFER_NOT_FOR_SALE",
             ]),
           )
           .min(1)
@@ -154,10 +154,10 @@ export const registerSubscriptionTools = (server: McpServer, client: BolClient):
             z.enum([
               "PROCESS_STATUS",
               "SHIPMENT",
-              "ORDER",
-              "OFFER",
-              "RETURN",
-              "INVENTORY",
+              "PRICE_STAR_BOUNDARY",
+              "COMPETING_OFFER",
+              "OFFER_FOR_SALE",
+              "OFFER_NOT_FOR_SALE",
             ]),
           )
           .min(1)

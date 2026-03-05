@@ -15,7 +15,7 @@ export const registerProductTools = (server: McpServer, client: BolClient): void
 
       inputSchema: z.object({
         language: z
-          .enum(["nl-NL", "nl-BE", "fr-BE"])
+          .enum(["nl", "nl-NL", "nl-BE", "fr-BE"])
           .optional()
           .describe("Language for the category names."),
       }),
@@ -52,11 +52,37 @@ export const registerProductTools = (server: McpServer, client: BolClient): void
         categoryId: z.string().optional().describe("Category ID to browse products in."),
         searchTerm: z.string().optional().describe("Search term to find products."),
         page: z.number().int().optional().default(1).describe("Page number (default 1)."),
+        sort: z
+          .enum(["RELEVANCE", "POPULARITY", "PRICE_ASC", "PRICE_DESC", "RELEASE_DATE", "RATING", "WISHLIST"])
+          .optional()
+          .describe("Sort order for the product list."),
+        filterRanges: z
+          .array(
+            z.object({
+              rangeId: z.string().describe("The filter range ID."),
+              min: z.number().describe("Minimum value."),
+              max: z.number().describe("Maximum value."),
+            }),
+          )
+          .optional()
+          .describe("Filter ranges to apply."),
+        filterValues: z
+          .array(
+            z.object({
+              filterValueId: z.string().describe("The filter value ID."),
+            }),
+          )
+          .optional()
+          .describe("Filter values to apply."),
+        language: z
+          .enum(["nl", "nl-NL", "nl-BE", "fr-BE"])
+          .optional()
+          .describe("Language for the response (Accept-Language header)."),
       }),
     },
-    async ({ countryCode, categoryId, searchTerm, page }) => {
+    async ({ countryCode, categoryId, searchTerm, page, sort, filterRanges, filterValues, language }) => {
       try {
-        const result = await client.getProductList({ countryCode, categoryId, searchTerm, page });
+        const result = await client.getProductList({ countryCode, categoryId, searchTerm, page, sort, filterRanges, filterValues, language });
 
         const products = result.products ?? [];
         const lines = products.map(
@@ -154,11 +180,15 @@ export const registerProductTools = (server: McpServer, client: BolClient): void
           .enum(["ALL", "BAD", "MODERATE", "REASONABLE", "GOOD", "AS_NEW", "NEW", "REFURBISHED_A", "REFURBISHED_B", "REFURBISHED_C"])
           .optional()
           .describe("Filter by product condition."),
+        includeRefurbishedConditions: z
+          .boolean()
+          .optional()
+          .describe("Whether to include refurbished conditions in the results."),
       }),
     },
-    async ({ ean, page, countryCode, bestOfferOnly, condition }) => {
+    async ({ ean, page, countryCode, bestOfferOnly, condition, includeRefurbishedConditions }) => {
       try {
-        const result = await client.getCompetingOffers(ean, page, countryCode, bestOfferOnly, condition);
+        const result = await client.getCompetingOffers(ean, page, countryCode, bestOfferOnly, condition, includeRefurbishedConditions);
 
         const offers = result.offers ?? [];
         const lines = offers.map(

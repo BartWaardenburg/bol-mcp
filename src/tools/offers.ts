@@ -4,16 +4,16 @@ import type { BolClient } from "../bol-client.js";
 import { toTextResult, toErrorResult } from "../tool-result.js";
 
 const BundlePriceSchema = z.object({
-  quantity: z.number().int().min(1).describe("Minimum quantity for this price tier."),
-  unitPrice: z.number().min(0).describe("Unit price for this quantity tier."),
+  quantity: z.number().int().min(1).max(24).describe("Minimum quantity for this price tier."),
+  unitPrice: z.number().min(1).max(9999).describe("Unit price for this quantity tier."),
 });
 
 const PricingSchema = z.object({
-  bundlePrices: z.array(BundlePriceSchema).min(1).describe("Price tiers. At minimum one entry with quantity 1."),
+  bundlePrices: z.array(BundlePriceSchema).min(1).max(4).describe("Price tiers (max 4). At minimum one entry with quantity 1."),
 });
 
 const StockSchema = z.object({
-  amount: z.number().int().min(0).describe("Stock amount."),
+  amount: z.number().int().min(0).max(999).describe("Stock amount."),
   managedByRetailer: z.boolean().describe("Whether stock is managed by the retailer."),
 });
 
@@ -25,15 +25,19 @@ const ConditionSchema = z.object({
     .enum(["NEW", "SECONDHAND"])
     .optional()
     .describe("Condition category."),
-  comment: z.string().optional().describe("Comment about the condition."),
+  comment: z.string().max(2000).optional().describe("Comment about the condition. Only allowed if name is not NEW."),
 });
 
 const FulfilmentSchema = z.object({
   method: z.enum(["FBR", "FBB"]).describe("FBR (fulfilled by retailer) or FBB (fulfilled by bol.com)."),
   deliveryCode: z
-    .string()
+    .enum([
+      "24uurs-23", "24uurs-22", "24uurs-21", "24uurs-20", "24uurs-19", "24uurs-18",
+      "24uurs-17", "24uurs-16", "24uurs-15", "24uurs-14", "24uurs-13", "24uurs-12",
+      "1-2d", "2-3d", "3-5d", "4-8d", "1-8d", "MijnLeverbelofte", "VVB",
+    ])
     .optional()
-    .describe("Delivery promise code (e.g. '24uurs-21', '1-2d', '2-3d', '3-5d', '4-8d')."),
+    .describe("Delivery promise code. Only used with FBR."),
 });
 
 export const registerOfferTools = (server: McpServer, client: BolClient): void => {
@@ -91,15 +95,16 @@ export const registerOfferTools = (server: McpServer, client: BolClient): void =
       inputSchema: z.object({
         ean: z.string().min(8).max(13).describe("EAN (European Article Number) barcode of the product."),
         condition: ConditionSchema.describe("Product condition."),
-        reference: z.string().optional().describe("Your internal reference for this offer."),
+        reference: z.string().max(100).optional().describe("Your internal reference for this offer (max 100 chars)."),
         onHoldByRetailer: z.boolean().optional().describe("Put the offer on hold (not visible on bol.com)."),
-        unknownProductTitle: z.string().optional().describe("Title for products not yet known by bol.com."),
+        unknownProductTitle: z.string().max(500).optional().describe("Title for products not yet known by bol.com."),
+        economicOperatorId: z.string().optional().describe("Identifier referring to the Economic Operator entity for EU compliance."),
         pricing: PricingSchema.describe("Pricing with bundle prices."),
         stock: StockSchema.describe("Stock information."),
         fulfilment: FulfilmentSchema.describe("Fulfilment method and delivery code."),
       }),
     },
-    async ({ ean, condition, reference, onHoldByRetailer, unknownProductTitle, pricing, stock, fulfilment }) => {
+    async ({ ean, condition, reference, onHoldByRetailer, unknownProductTitle, economicOperatorId, pricing, stock, fulfilment }) => {
       try {
         const result = await client.createOffer({
           ean,
@@ -107,6 +112,7 @@ export const registerOfferTools = (server: McpServer, client: BolClient): void =
           ...(reference !== undefined ? { reference } : {}),
           ...(onHoldByRetailer !== undefined ? { onHoldByRetailer } : {}),
           ...(unknownProductTitle !== undefined ? { unknownProductTitle } : {}),
+          ...(economicOperatorId !== undefined ? { economicOperatorId } : {}),
           pricing,
           stock,
           fulfilment,
@@ -141,19 +147,21 @@ export const registerOfferTools = (server: McpServer, client: BolClient): void =
 
       inputSchema: z.object({
         offerId: z.string().min(1).describe("The bol.com offer ID to update."),
-        reference: z.string().optional().describe("Your internal reference for this offer."),
+        reference: z.string().max(100).optional().describe("Your internal reference for this offer (max 100 chars)."),
         onHoldByRetailer: z.boolean().optional().describe("Put the offer on hold (not visible on bol.com)."),
-        unknownProductTitle: z.string().optional().describe("Title for products not yet known by bol.com."),
-        fulfilment: FulfilmentSchema.optional().describe("Updated fulfilment method and delivery code."),
+        unknownProductTitle: z.string().max(500).optional().describe("Title for products not yet known by bol.com."),
+        economicOperatorId: z.string().optional().describe("Identifier referring to the Economic Operator entity for EU compliance."),
+        fulfilment: FulfilmentSchema.describe("Fulfilment method and delivery code."),
       }),
     },
-    async ({ offerId, reference, onHoldByRetailer, unknownProductTitle, fulfilment }) => {
+    async ({ offerId, reference, onHoldByRetailer, unknownProductTitle, economicOperatorId, fulfilment }) => {
       try {
         const result = await client.updateOffer(offerId, {
           ...(reference !== undefined ? { reference } : {}),
           ...(onHoldByRetailer !== undefined ? { onHoldByRetailer } : {}),
           ...(unknownProductTitle !== undefined ? { unknownProductTitle } : {}),
-          ...(fulfilment !== undefined ? { fulfilment } : {}),
+          ...(economicOperatorId !== undefined ? { economicOperatorId } : {}),
+          fulfilment,
         });
 
         return toTextResult(
@@ -241,7 +249,7 @@ export const registerOfferTools = (server: McpServer, client: BolClient): void =
 
       inputSchema: z.object({
         offerId: z.string().min(1).describe("The bol.com offer ID."),
-        amount: z.number().int().min(0).describe("New stock amount."),
+        amount: z.number().int().min(0).max(999).describe("New stock amount."),
         managedByRetailer: z.boolean().describe("Whether stock is managed by the retailer."),
       }),
     },
@@ -255,6 +263,124 @@ export const registerOfferTools = (server: McpServer, client: BolClient): void =
             `Process status: ${result.processStatusId} (${result.status})`,
           ].join("\n"),
           result as Record<string, unknown>,
+        );
+      } catch (error) {
+        return toErrorResult(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "request_offer_export",
+    {
+      title: "Request Offer Export",
+      description:
+        "Request an offer export file containing all offers. " +
+        "Returns a process status — use get_process_status to get the report ID, then retrieve with get_offer_export.",
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+
+      inputSchema: z.object({
+        format: z.enum(["CSV"]).default("CSV").describe("The file format for the export."),
+      }),
+    },
+    async ({ format }) => {
+      try {
+        const result = await client.requestOfferExport({ format });
+
+        return toTextResult(
+          [
+            `Offer export requested (${format})`,
+            `Process status: ${result.processStatusId} (${result.status})`,
+            result.entityId ? `Report ID: ${result.entityId}` : null,
+            "Use get_process_status to check completion, then get_offer_export to retrieve.",
+          ]
+            .filter(Boolean)
+            .join("\n"),
+          result as Record<string, unknown>,
+        );
+      } catch (error) {
+        return toErrorResult(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "get_offer_export",
+    {
+      title: "Get Offer Export",
+      description:
+        "Retrieve an offer export file by report ID. The report ID is obtained from the process status after requesting an export.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
+
+      inputSchema: z.object({
+        reportId: z.string().min(1).describe("The report ID from the offer export request."),
+      }),
+    },
+    async ({ reportId }) => {
+      try {
+        const data = await client.getOfferExport(reportId);
+
+        return toTextResult(
+          typeof data === "string" ? `Offer export retrieved (${reportId}).` : JSON.stringify(data),
+          { reportId, data } as Record<string, unknown>,
+        );
+      } catch (error) {
+        return toErrorResult(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "request_unpublished_offer_report",
+    {
+      title: "Request Unpublished Offer Report",
+      description:
+        "Request a report of all unpublished offers and reasons. " +
+        "Returns a process status — use get_process_status to get the report ID, then retrieve with get_unpublished_offer_report.",
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+
+      inputSchema: z.object({}),
+    },
+    async () => {
+      try {
+        const result = await client.requestUnpublishedOfferReport();
+
+        return toTextResult(
+          [
+            `Unpublished offer report requested`,
+            `Process status: ${result.processStatusId} (${result.status})`,
+            result.entityId ? `Report ID: ${result.entityId}` : null,
+            "Use get_process_status to check completion, then get_unpublished_offer_report to retrieve.",
+          ]
+            .filter(Boolean)
+            .join("\n"),
+          result as Record<string, unknown>,
+        );
+      } catch (error) {
+        return toErrorResult(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "get_unpublished_offer_report",
+    {
+      title: "Get Unpublished Offer Report",
+      description:
+        "Retrieve an unpublished offer report by report ID. Contains all unpublished offers and reasons.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
+
+      inputSchema: z.object({
+        reportId: z.string().min(1).describe("The report ID from the unpublished offer report request."),
+      }),
+    },
+    async ({ reportId }) => {
+      try {
+        const data = await client.getUnpublishedOfferReport(reportId);
+
+        return toTextResult(
+          typeof data === "string" ? `Unpublished offer report retrieved (${reportId}).` : JSON.stringify(data),
+          { reportId, data } as Record<string, unknown>,
         );
       } catch (error) {
         return toErrorResult(error);

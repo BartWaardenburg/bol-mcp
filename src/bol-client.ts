@@ -178,6 +178,7 @@ export class BolClient {
     status?: string,
     changeIntervalMinute?: number,
     latestChangeDate?: string,
+    vvbOnly?: boolean,
   ): Promise<OrdersResponse> {
     const query = new URLSearchParams({ page: String(page) });
     if (fulfilmentMethod) {
@@ -192,8 +193,11 @@ export class BolClient {
     if (latestChangeDate) {
       query.set("latest-change-date", latestChangeDate);
     }
+    if (vvbOnly !== undefined) {
+      query.set("vvb-only", String(vvbOnly));
+    }
     return this.cachedRequest(
-      `orders:${page}:${fulfilmentMethod ?? ""}:${status ?? ""}:${changeIntervalMinute ?? ""}:${latestChangeDate ?? ""}`,
+      `orders:${page}:${fulfilmentMethod ?? ""}:${status ?? ""}:${changeIntervalMinute ?? ""}:${latestChangeDate ?? ""}:${vvbOnly ?? ""}`,
       60_000,
       () => this.request<OrdersResponse>(`/orders?${query.toString()}`),
     );
@@ -489,9 +493,15 @@ export class BolClient {
   }
 
   async getProductList(data: ProductListRequest): Promise<ProductListResponse> {
+    const { language, ...body } = data;
+    const headers: Record<string, string> = {};
+    if (language) {
+      headers["Accept-Language"] = language;
+    }
     return this.request<ProductListResponse>("/products/list", {
       method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify(body),
+      headers,
     });
   }
 
@@ -536,13 +546,15 @@ export class BolClient {
     countryCode?: string,
     bestOfferOnly?: boolean,
     condition?: string,
+    includeRefurbishedConditions?: boolean,
   ): Promise<CompetingOffersResponse> {
     const query = new URLSearchParams({ page: String(page) });
     if (countryCode) query.set("country-code", countryCode);
     if (bestOfferOnly !== undefined) query.set("best-offer-only", String(bestOfferOnly));
     if (condition) query.set("condition", condition);
+    if (includeRefurbishedConditions !== undefined) query.set("include-refurbished-conditions", String(includeRefurbishedConditions));
     return this.cachedRequest(
-      `competing-offers:${ean}:${page}:${countryCode ?? ""}:${bestOfferOnly ?? ""}:${condition ?? ""}`,
+      `competing-offers:${ean}:${page}:${countryCode ?? ""}:${bestOfferOnly ?? ""}:${condition ?? ""}:${includeRefurbishedConditions ?? ""}`,
       120_000,
       () => this.request<CompetingOffersResponse>(
         `/products/${encodeURIComponent(ean)}/offers?${query.toString()}`,
