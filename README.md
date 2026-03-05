@@ -11,6 +11,75 @@ A community-built [Model Context Protocol](https://modelcontextprotocol.io) (MCP
 
 > **Note:** This is an unofficial, community-maintained project and is not affiliated with or endorsed by bol.com.
 
+## Quick Start (Non-Developers)
+
+You do not need to clone this repo.
+
+1. Make sure Node.js 20+ is installed (your AI app will run `npx` on your machine)
+2. Get bol.com API credentials (see [Authentication](#authentication))
+3. Add the server to your AI app as an MCP server (copy/paste config below)
+4. Ask in plain language (see [Example Usage](#example-usage))
+
+### Add To Claude Desktop (Also Works In Cowork)
+
+Cowork runs inside Claude Desktop and uses the same connected MCP servers and permissions.
+
+1. Open your Claude Desktop MCP config file:
+   - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+   - Windows: `%APPDATA%\\Claude\\claude_desktop_config.json`
+2. Add this server entry (or merge it into your existing `mcpServers`):
+
+```json
+{
+  "mcpServers": {
+    "bol-mcp": {
+      "command": "npx",
+      "args": ["-y", "bol-mcp"],
+      "env": {
+        "BOL_CLIENT_ID": "your-client-id",
+        "BOL_CLIENT_SECRET": "your-client-secret"
+      }
+    }
+  }
+}
+```
+
+3. Restart Claude Desktop
+
+### Add To Other AI Apps
+
+Most MCP apps have a screen like "Add MCP Server" where you can fill in:
+
+- Command: `npx`
+- Args: `-y bol-mcp`
+- Env: `BOL_CLIENT_ID=your-client-id` and `BOL_CLIENT_SECRET=your-client-secret`
+
+If your app wants JSON, paste this and adapt the top-level key name to your client (common ones are `mcpServers`, `servers`, or `context_servers`):
+
+```json
+{
+  "<servers-key>": {
+    "bol-mcp": {
+      "command": "npx",
+      "args": ["-y", "bol-mcp"],
+      "env": {
+        "BOL_CLIENT_ID": "your-client-id",
+        "BOL_CLIENT_SECRET": "your-client-secret"
+      }
+    }
+  }
+}
+```
+
+### Troubleshooting
+
+- Error: `Missing required env vars: BOL_CLIENT_ID, BOL_CLIENT_SECRET`
+  - Fix: add both env vars to the MCP server config and restart your app.
+- Error: `npx: command not found` or server fails to start
+  - Fix: install Node.js 20+ and restart your app.
+- You can connect, but API calls fail with `401/403`
+  - Fix: verify client ID/secret are correct and active in the bol.com Seller Dashboard.
+
 ## API Coverage
 
 bol.com exposes several APIs for different purposes. This MCP server covers the **Retailer API v10** and the **Shared API** — the core APIs for marketplace sellers managing their day-to-day operations.
@@ -55,21 +124,74 @@ bol.com exposes several APIs for different purposes. This MCP server covers the 
 
 ## Supported Clients
 
-This MCP server works with any client that supports the Model Context Protocol, including:
+<details>
+<summary><strong>Advanced setup and supported clients (expand)</strong></summary>
 
-| Client | Easiest install |
+This MCP server is not tied to one coding agent. It works with any MCP-compatible client or agent runtime that can start a stdio MCP server.
+
+| Client / runtime | Docs |
 |---|---|
-| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | One-liner: `claude mcp add` |
-| [Codex CLI](https://github.com/openai/codex) (OpenAI) | One-liner: `codex mcp add` |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) (Google) | One-liner: `gemini mcp add` |
-| [VS Code](https://code.visualstudio.com/) (Copilot) | Command Palette: `MCP: Add Server` |
-| [Claude Desktop](https://claude.ai/download) | JSON config file |
-| [Cursor](https://cursor.com) | JSON config file |
-| [Windsurf](https://codeium.com/windsurf) | JSON config file |
-| [Cline](https://github.com/cline/cline) | UI settings |
-| [Zed](https://zed.dev) | JSON settings file |
+| Claude Code | [MCP in Claude Code](https://docs.anthropic.com/en/docs/claude-code/mcp) |
+| Anthropic API (Messages API) | [Remote MCP servers](https://docs.anthropic.com/en/docs/agents-and-tools/remote-mcp-servers) |
+| Codex CLI (OpenAI) | [Codex CLI docs](https://developers.openai.com/codex/cli) |
+| Gemini CLI (Google) | [Gemini CLI MCP server docs](https://google-gemini.github.io/gemini-cli/docs/tools/mcp-server.html) |
+| VS Code (Copilot) | [Use MCP servers in VS Code](https://code.visualstudio.com/docs/copilot/customization/mcp-servers) |
+| Claude Desktop | [MCP in Claude Desktop](https://docs.anthropic.com/en/docs/claude-desktop/mcp) |
+| Cursor | [Cursor docs](https://cursor.com/docs) |
+| Windsurf | [Windsurf MCP docs](https://docs.windsurf.com/windsurf/cascade/mcp) |
+| Cline | [Cline MCP docs](https://docs.cline.bot/mcp/) |
+| Zed | [Zed context servers docs](https://zed.dev/docs/assistant/context-servers) |
+| Any other MCP host | Use command/args/env from [Generic MCP Server Config](#generic-mcp-server-config) |
 
-## Installation
+### Claude Ecosystem Notes
+
+Claude currently has multiple MCP-related concepts that are easy to mix up:
+
+- **Local MCP servers (Claude Desktop):** defined in `claude_desktop_config.json` and started on your machine ([docs](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop)).
+- **Cowork:** reuses the MCP servers connected in Claude Desktop ([docs](https://support.claude.com/en/articles/13345190-get-started-with-cowork)).
+- **Connectors:** remote MCP integrations managed in Claude ([docs](https://support.claude.com/en/articles/11176164-use-connectors-to-extend-claude-s-capabilities)).
+- **Cowork plugins:** Claude-specific workflow packaging (instructions + tools/data integrations) ([docs](https://support.claude.com/en/articles/13837440-use-plugins-in-cowork)). Useful in Claude, but not portable as a generic MCP server config for other agent clients.
+
+Verified against vendor docs on **2026-03-05**.
+
+## Setup (Power Users)
+
+If Quick Start worked in your client, you can skip this section. These are additional per-client setup options and CLI one-liners.
+
+### Generic MCP Server Config
+
+Use this as the baseline in any host:
+
+- **Command:** `npx`
+- **Args:** `["-y", "bol-mcp"]`
+- **Required env vars:** `BOL_CLIENT_ID`, `BOL_CLIENT_SECRET`
+- **Optional env vars:** `BOL_CACHE_TTL`, `BOL_MAX_RETRIES`, `BOL_TOOLSETS` (see [Configuration](#configuration))
+
+Minimal JSON (adapt the top-level key to your host):
+
+```json
+{
+  "<servers-key>": {
+    "bol-mcp": {
+      "command": "npx",
+      "args": ["-y", "bol-mcp"],
+      "env": {
+        "BOL_CLIENT_ID": "your-client-id",
+        "BOL_CLIENT_SECRET": "your-client-secret"
+      }
+    }
+  }
+}
+```
+
+Host key mapping:
+
+| Host | Top-level key | Notes |
+|---|---|---|
+| VS Code | `servers` | Add `"type": "stdio"` on the server object |
+| Claude Desktop / Cursor / Windsurf / Cline | `mcpServers` | Same command/args/env block |
+| Zed | `context_servers` | Same command/args/env block |
+| Codex CLI (TOML) | `mcp_servers` | Uses TOML, shown below |
 
 ### Claude Code
 
@@ -89,82 +211,42 @@ codex mcp add bol-mcp \
   -- npx -y bol-mcp
 ```
 
+`~/.codex/config.toml` alternative:
+
+```toml
+[mcp_servers.bol-mcp]
+command = "npx"
+args = ["-y", "bol-mcp"]
+env = { "BOL_CLIENT_ID" = "your-client-id", "BOL_CLIENT_SECRET" = "your-client-secret" }
+```
+
 ### Gemini CLI (Google)
 
 ```bash
 gemini mcp add bol-mcp -- npx -y bol-mcp
 ```
 
-Set environment variables `BOL_CLIENT_ID` and `BOL_CLIENT_SECRET` separately via `~/.gemini/settings.json`.
+Set `BOL_CLIENT_ID` and `BOL_CLIENT_SECRET` in `~/.gemini/settings.json`.
 
 ### VS Code (Copilot)
 
-Open the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`) > `MCP: Add Server` > select **Command (stdio)**.
+Open Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`) > `MCP: Add Server` > **Command (stdio)**, or use `.vscode/mcp.json` with top-level key `servers` and the canonical command/args/env block from [Generic MCP Server Config](#generic-mcp-server-config).
 
-Or add to `.vscode/mcp.json` in your project directory:
+### Claude Desktop + Cowork / Cursor / Windsurf / Cline / Zed
 
-```json
-{
-  "servers": {
-    "bol-mcp": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "bol-mcp"],
-      "env": {
-        "BOL_CLIENT_ID": "your-client-id",
-        "BOL_CLIENT_SECRET": "your-client-secret"
-      }
-    }
-  }
-}
-```
+Cowork runs inside Claude Desktop and uses the same connected MCP servers and permissions. Configure once in Claude Desktop, then the server is available in Cowork.
 
-### Claude Desktop / Cursor / Windsurf / Cline
+Use the canonical config block and place it in the host file below with the matching top-level key.
 
-These clients share the same JSON format. Add the config below to the appropriate file:
-
-| Client | Config file |
-|---|---|
-| Claude Desktop (macOS) | `~/Library/Application Support/Claude/claude_desktop_config.json` |
-| Claude Desktop (Windows) | `%APPDATA%\Claude\claude_desktop_config.json` |
-| Cursor (project) | `.cursor/mcp.json` |
-| Cursor (global) | `~/.cursor/mcp.json` |
-| Windsurf | `~/.codeium/windsurf/mcp_config.json` |
-| Cline | Settings > MCP Servers > Edit |
-
-```json
-{
-  "mcpServers": {
-    "bol-mcp": {
-      "command": "npx",
-      "args": ["-y", "bol-mcp"],
-      "env": {
-        "BOL_CLIENT_ID": "your-client-id",
-        "BOL_CLIENT_SECRET": "your-client-secret"
-      }
-    }
-  }
-}
-```
-
-### Zed
-
-Add to your Zed settings (`~/.zed/settings.json` on macOS, `~/.config/zed/settings.json` on Linux):
-
-```json
-{
-  "context_servers": {
-    "bol-mcp": {
-      "command": "npx",
-      "args": ["-y", "bol-mcp"],
-      "env": {
-        "BOL_CLIENT_ID": "your-client-id",
-        "BOL_CLIENT_SECRET": "your-client-secret"
-      }
-    }
-  }
-}
-```
+| Client | Config location | Top-level key |
+|---|---|---|
+| Claude Desktop (macOS) | `~/Library/Application Support/Claude/claude_desktop_config.json` | `mcpServers` |
+| Claude Desktop (Windows) | `%APPDATA%\\Claude\\claude_desktop_config.json` | `mcpServers` |
+| Cursor (project) | `.cursor/mcp.json` | `mcpServers` |
+| Cursor (global) | `~/.cursor/mcp.json` | `mcpServers` |
+| Windsurf | `~/.codeium/windsurf/mcp_config.json` | `mcpServers` |
+| Cline | MCP settings UI | `mcpServers` |
+| Zed (macOS/Linux) | `~/.zed/settings.json` or `~/.config/zed/settings.json` | `context_servers` |
 
 ### Docker
 
@@ -175,24 +257,32 @@ docker run -i --rm \
   ghcr.io/bartwaardenburg/bol-mcp
 ```
 
-### Codex CLI (TOML config alternative)
-
-If you prefer editing `~/.codex/config.toml` directly:
-
-```toml
-[mcp_servers.bol-mcp]
-command = "npx"
-args = ["-y", "bol-mcp"]
-env = { "BOL_CLIENT_ID" = "your-client-id", "BOL_CLIENT_SECRET" = "your-client-secret" }
-```
-
 ### Other MCP Clients
 
-For any MCP-compatible client, use this server configuration:
+Use the values from [Generic MCP Server Config](#generic-mcp-server-config).
 
-- **Command:** `npx`
-- **Args:** `["-y", "bol-mcp"]`
-- **Environment variables:** `BOL_CLIENT_ID` and `BOL_CLIENT_SECRET`
+## Terminology
+
+What is portable across hosts:
+
+- MCP server runtime settings (`command`, `args`, `env`)
+- Transport model (`stdio` command server)
+- Tool names and tool schemas exposed by this server
+
+What is host/vendor-specific (not portable as-is):
+
+- Host config key names (`servers`, `mcpServers`, `context_servers`, `mcp_servers`)
+- Host UX/workflows for adding servers (CLI commands, UI menus, settings paths)
+- Anthropic-specific concepts such as [Claude Desktop local MCP servers](https://docs.anthropic.com/en/docs/claude-desktop/mcp), [Claude Connectors via remote MCP](https://docs.anthropic.com/en/docs/agents-and-tools/remote-mcp-servers), and [Claude Code plugins](https://docs.anthropic.com/en/docs/claude-code/plugins) used in Cowork workflows
+
+## Security Notes
+
+- **Trust model:** Any prompt or agent allowed to call this MCP server can execute bol.com API actions with the configured credentials.
+- **Least-privilege credentials:** Use separate bol.com API credentials per environment/team/use case and rotate/revoke when access changes.
+- **Write-action approvals:** Enable host-side approvals for mutating tools (`create_*`, `update_*`, `delete_*`, `cancel_*`, `handle_return`, shipment/replenishment actions).
+- **Team config governance:** Keep shared MCP config in version control, require review for changes to command/args/env/toolset filtering, and keep secrets in a vault or host secret manager (not in plain-text repo files).
+
+</details>
 
 ## Configuration
 
@@ -240,10 +330,11 @@ Tokens are automatically reused and refreshed before expiry — no manual token 
 
 ### Security Best Practices
 
-- **Never share** your client ID or client secret, and don't hardcode them in source files
-- **Use environment variables** to pass credentials (as shown in the installation examples)
-- **Create separate credentials** for different applications or integrations
-- **Revoke immediately** if credentials are compromised — removing them in the Seller Dashboard stops access instantly
+See [Security Notes](#security-notes). bol.com-specific credential hygiene:
+
+- Never share your client ID or client secret, and don't hardcode them in source files
+- Use environment variables or host secret stores to pass credentials
+- Revoke and replace credentials immediately if compromise is suspected
 
 ## Available Tools
 
