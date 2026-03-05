@@ -536,6 +536,13 @@ Once connected, you can interact with the bol.com API using natural language:
 - "What's the commission on EAN 9781234567890 at 29.99 EUR?"
 - "List my invoices for January 2025"
 
+## Community
+
+- Support: [SUPPORT.md](SUPPORT.md)
+- Security reporting: [SECURITY.md](SECURITY.md)
+- Contributing guidelines: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Bug reports and feature requests: [Issues](https://github.com/bartwaardenburg/bol-mcp/issues)
+
 ## Development
 
 ```bash
