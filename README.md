@@ -7,9 +7,22 @@
 [![CI](https://github.com/bartwaardenburg/bol-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/bartwaardenburg/bol-mcp/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/BartWaardenburg/b6fe43cfa36c0e461cc9dd5eea411dca/raw/bol-mcp-coverage.json)](https://bartwaardenburg.github.io/bol-mcp/)
 
+Een [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server voor de [bol.com Retailer API](https://api.bol.com/retailer/public/Retailer-API/index.html). Beheer bestellingen, aanbiedingen, verzendingen, retouren, facturen en commissies — allemaal via natuurlijke taal in je AI-app.
+
+> **Let op:** Dit is een onofficieel, community-onderhouden project en is niet verbonden aan of goedgekeurd door bol.com.
+
 A community-built [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server for the [bol.com Retailer API](https://api.bol.com/retailer/public/Retailer-API/index.html). Manage orders, offers, shipments, returns, invoices, and commissions — all through natural language via any MCP-compatible AI client.
 
 > **Note:** This is an unofficial, community-maintained project and is not affiliated with or endorsed by bol.com.
+
+## Snel starten
+
+Je hoeft deze repo niet te clonen.
+
+1. Zorg dat Node.js 20+ is geïnstalleerd (je AI-app draait `npx` op je machine)
+2. Haal bol.com API-gegevens op (zie [Authentication](#authentication))
+3. Voeg de server toe als MCP server in je AI-app (kopieer onderstaande configuratie)
+4. Stel vragen in gewoon Nederlands (zie [Voorbeelden](#voorbeelden))
 
 ## Quick Start (Non-Developers)
 
@@ -522,6 +535,19 @@ BOL_TOOLSETS=orders,offers
 | `process-status` | Asynchronous process status tracking (by ID, entity, or bulk) |
 
 When not set, all toolsets are enabled. Invalid names are ignored; if all names are invalid, all toolsets are enabled as a fallback.
+
+## Voorbeelden
+
+Eenmaal verbonden kun je in gewoon Nederlands vragen stellen:
+
+- "Toon al mijn openstaande bestellingen"
+- "Geef de details van bestelling 1234567890"
+- "Maak een aanbieding voor EAN 9781234567890 voor 19,99 EUR met 50 stuks op voorraad"
+- "Werk de voorraad bij voor aanbieding abc-123 naar 25 stuks"
+- "Verzend orderitems voor bestelling 1234567890 met transportcode TNT"
+- "Toon alle onbehandelde retouren"
+- "Wat is de commissie op EAN 9781234567890 bij 29,99 EUR?"
+- "Toon mijn facturen van januari 2025"
 
 ## Example Usage
 
