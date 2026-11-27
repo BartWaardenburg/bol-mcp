@@ -9,6 +9,8 @@
 
 Een [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server voor de [bol.com Retailer API](https://api.bol.com/retailer/public/Retailer-API/index.html). Beheer bestellingen, aanbiedingen, verzendingen, retouren, facturen en commissies — allemaal via natuurlijke taal in je AI-app.
 
+The server supports MCP specification 2026-07-28. Clients that use the 2025 handshake also work.
+
 > **Let op:** Dit is een onofficieel, community-onderhouden project en is niet verbonden aan of goedgekeurd door bol.com.
 
 A community-built [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server for the [bol.com Retailer API](https://api.bol.com/retailer/public/Retailer-API/index.html). Manage orders, offers, shipments, returns, invoices, and commissions — all through natural language via any MCP-compatible AI client.

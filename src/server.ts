@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import type { BolClient } from "./bol-client.js";
 import { registerOrderTools } from "./tools/orders.js";
 import { registerOfferTools } from "./tools/offers.js";
@@ -76,6 +76,15 @@ export const parseToolsets = (env?: string): Set<Toolset> => {
   return valid.size > 0 ? valid : new Set(ALL_TOOLSETS);
 };
 
+const INSTRUCTIONS = [
+  "Manage a bol.com retailer account with the bol.com Retailer API.",
+  "To fulfil orders, call list_orders, then get_order, then create_shipment.",
+  "To manage offers, call get_offer, then update_offer_price or update_offer_stock.",
+  "Write calls such as create_offer, update_offer and delete_offer return a process status. Poll it with get_process_status.",
+  "The server needs the env vars BOL_CLIENT_ID and BOL_CLIENT_SECRET.",
+  "The bol.com API limits the request rate. The server retries on HTTP 429.",
+].join("\n");
+
 type ToolRegisterer = (server: McpServer, client: BolClient) => void;
 
 const toolsetRegistry: Record<Toolset, ToolRegisterer[]> = {
@@ -102,15 +111,21 @@ export const createServer = (
   client: BolClient,
   toolsets?: Set<Toolset>,
 ): McpServer => {
-  const server = new McpServer({
-    name: "bol-mcp",
-    version,
-  });
+  const server = new McpServer(
+    {
+      name: "bol-mcp",
+      title: "bol.com Retailer",
+      version,
+      websiteUrl: "https://github.com/BartWaardenburg/bol-mcp",
+    },
+    { instructions: INSTRUCTIONS },
+  );
 
   const enabled = toolsets ?? new Set(ALL_TOOLSETS);
   const registered = new Set<ToolRegisterer>();
 
-  for (const toolset of enabled) {
+  // Iterate the fixed list, not the user input, so tools/list has one stable order.
+  for (const toolset of ALL_TOOLSETS.filter((t) => enabled.has(t))) {
     const registerers = toolsetRegistry[toolset];
 
     for (const register of registerers) {
