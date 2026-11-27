@@ -1,16 +1,59 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.BartWaardenburg/bol-mcp",
+  "title": "bol.com Retailer",
   "description": "Manage orders, offers, shipments, returns, and invoices via the bol.com Retailer API",
-  "version": "0.1.0",
+  "repository": {
+    "url": "https://github.com/BartWaardenburg/bol-mcp",
+    "source": "github"
+  },
+  "websiteUrl": "https://github.com/BartWaardenburg/bol-mcp",
+  "version": "0.3.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "bol-mcp",
-      "version": "0.1.0",
+      "version": "0.3.0",
       "transport": {
         "type": "stdio"
-      }
+      },
+      "environmentVariables": [
+        {
+          "name": "BOL_CLIENT_ID",
+          "description": "bol.com Retailer API client ID",
+          "isRequired": true,
+          "isSecret": false,
+          "format": "string"
+        },
+        {
+          "name": "BOL_CLIENT_SECRET",
+          "description": "bol.com Retailer API client secret",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "BOL_CACHE_TTL",
+          "description": "Cache time in seconds for read calls",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string"
+        },
+        {
+          "name": "BOL_MAX_RETRIES",
+          "description": "Maximum retries on HTTP 429 (default 3)",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string"
+        },
+        {
+          "name": "BOL_TOOLSETS",
+          "description": "Comma-separated list of toolsets to enable (default all)",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string"
+        }
+      ]
     }
   ]
 }
