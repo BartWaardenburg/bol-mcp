@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.1](https://github.com/BartWaardenburg/bol-mcp/compare/v0.4.0...v0.4.1) (2026-11-27)
+
+### Bug Fixes
+
+* copy pnpm-workspace.yaml into the Docker build and build the image in CI ([7fa6ba4](https://github.com/BartWaardenburg/bol-mcp/commit/7fa6ba425ba9e716d5af19293d6b9816196e6643))
+
 # [0.4.0](https://github.com/BartWaardenburg/bol-mcp/compare/v0.3.0...v0.4.0) (2026-11-27)
 
 ### Features
