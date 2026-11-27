@@ -1,5 +1,11 @@
 # Changelog
 
+# [0.4.0](https://github.com/BartWaardenburg/bol-mcp/compare/v0.3.0...v0.4.0) (2026-11-27)
+
+### Features
+
+* move to MCP TypeScript SDK v2 and spec 2026-07-28 ([#3](https://github.com/BartWaardenburg/bol-mcp/issues/3)) ([b574bdf](https://github.com/BartWaardenburg/bol-mcp/commit/b574bdf91ea5c8ec79fa05f88020ede3c58391a9))
+
 # [0.3.0](https://github.com/BartWaardenburg/bol-mcp/compare/v0.2.0...v0.3.0) (2026-03-05)
 
 
